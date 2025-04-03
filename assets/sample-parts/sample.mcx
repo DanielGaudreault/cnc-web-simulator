@@ -1,1 +1,101 @@
-
+{
+    "metadata": {
+        "version": "1.0",
+        "units": "mm",
+        "created": "2023-10-15T14:30:00Z",
+        "generator": "WebMastercam Sample"
+    },
+    "geometry": [
+        {
+            "type": "cube",
+            "position": { "x": 0, "y": 0, "z": 0 },
+            "dimensions": { "x": 100, "y": 80, "z": 20 }
+        },
+        {
+            "type": "cylinder",
+            "position": { "x": 20, "y": 20, "z": 20 },
+            "radius": 8,
+            "height": 10
+        },
+        {
+            "type": "cylinder",
+            "position": { "x": 80, "y": 20, "z": 20 },
+            "radius": 8,
+            "height": 10
+        },
+        {
+            "type": "cylinder",
+            "position": { "x": 20, "y": 60, "z": 20 },
+            "radius": 8,
+            "height": 10
+        },
+        {
+            "type": "cylinder",
+            "position": { "x": 80, "y": 60, "z": 20 },
+            "radius": 8,
+            "height": 10
+        }
+    ],
+    "toolpaths": [
+        {
+            "id": "tp1",
+            "name": "Face Top",
+            "type": "face",
+            "tool": "1/2\" Flat End Mill",
+            "parameters": {
+                "stepover": 0.4,
+                "depthPerPass": 1.0,
+                "feedrate": 200,
+                "spindleSpeed": 2500,
+                "finalDepth": 0.0
+            },
+            "paths": [
+                { "x": 0, "y": 0, "z": 20 },
+                { "x": 100, "y": 0, "z": 20 },
+                { "x": 100, "y": 80, "z": 20 },
+                { "x": 0, "y": 80, "z": 20 },
+                { "x": 0, "y": 0, "z": 20 }
+            ]
+        },
+        {
+            "id": "tp2",
+            "name": "Drill Holes",
+            "type": "drill",
+            "tool": "1/8\" Drill",
+            "parameters": {
+                "peckDepth": 0.5,
+                "feedrate": 50,
+                "spindleSpeed": 3000,
+                "finalDepth": -5
+            },
+            "paths": [
+                { "x": 20, "y": 20, "z": 20 },
+                { "x": 20, "y": 20, "z": -5 },
+                { "x": 20, "y": 20, "z": 20 },
+                { "x": 80, "y": 20, "z": 20 },
+                { "x": 80, "y": 20, "z": -5 },
+                { "x": 80, "y": 20, "z": 20 },
+                { "x": 20, "y": 60, "z": 20 },
+                { "x": 20, "y": 60, "z": -5 },
+                { "x": 20, "y": 60, "z": 20 },
+                { "x": 80, "y": 60, "z": 20 },
+                { "x": 80, "y": 60, "z": -5 },
+                { "x": 80, "y": 60, "z": 20 }
+            ]
+        }
+    ],
+    "operations": [
+        {
+            "id": "op1",
+            "name": "Face Top Operation",
+            "type": "face",
+            "toolpathId": "tp1"
+        },
+        {
+            "id": "op2",
+            "name": "Drill Holes Operation",
+            "type": "drill",
+            "toolpathId": "tp2"
+        }
+    ]
+}
