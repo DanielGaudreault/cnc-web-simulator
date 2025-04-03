@@ -1,1 +1,10 @@
-
+{
+    "aluminum": {
+        "feedPerTooth": 0.1,
+        "surfaceSpeed": 250
+    },
+    "steel": {
+        "feedPerTooth": 0.05,
+        "surfaceSpeed": 100
+    }
+}
