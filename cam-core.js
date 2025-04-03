@@ -1,25 +1,45 @@
 class CAMCore {
-    static generateAdaptiveClearing(model, tool) {
-        // Simplified adaptive clearing algorithm
+    static async generateAdaptiveClearing(model, tool, material) {
+        // Validate inputs
+        if (!model || !tool || !material) {
+            throw new Error('Missing required parameters');
+        }
+        
+        // Get model bounding box
+        model.geometry.computeBoundingBox();
+        const bbox = model.geometry.boundingBox;
+        
+        // Calculate toolpath parameters
+        const stepover = tool.diameter * 0.4;  // 40% stepover
+        const stepdown = tool.stepdown;
+        const feedrate = this.calculateFeedrate(tool, material);
+        
+        // Generate toolpath
         const toolpath = {
             type: 'adaptive',
             tool: tool,
+            material: material,
             operations: []
         };
         
-        // Sample toolpath generation logic
-        const bbox = model.geometry.boundingBox;
-        const stepover = tool.diameter * 0.4;
-        
-        for (let z = bbox.max.z; z >= bbox.min.z; z -= tool.stepdown) {
-            for (let x = bbox.min.x; x <= bbox.max.x; x += stepover) {
+        // Adaptive clearing algorithm
+        for (let z = bbox.max.z; z >= bbox.min.z; z -= stepdown) {
+            // Alternate direction each layer
+            const xStart = z % (stepdown * 2) === 0 ? bbox.min.x : bbox.max.x;
+            const xEnd = z % (stepdown * 2) === 0 ? bbox.max.x : bbox.min.x;
+            const xStep = z % (stepdown * 2) === 0 ? stepover : -stepover;
+            
+            for (let x = xStart; 
+                 z % (stepdown * 2) === 0 ? x <= xEnd : x >= xEnd; 
+                 x += xStep) {
+                
                 toolpath.operations.push({
                     type: 'cut',
                     points: [
                         { x: x, y: bbox.min.y, z: z },
                         { x: x, y: bbox.max.y, z: z }
                     ],
-                    feedrate: tool.feedrate
+                    feedrate: feedrate
                 });
             }
         }
@@ -27,32 +47,13 @@ class CAMCore {
         return toolpath;
     }
     
-    static generateContour(model, tool) {
-        // Contour generation logic
+    static calculateFeedrate(tool, material) {
+        // Calculate feedrate based on tool and material
+        return tool.flutes * material.feedPerTooth * tool.rpm;
     }
-}
-
-// Post Processors
-class PostProcessor {
-    static haas(toolpath) {
-        let gcode = [
-            '%',
-            'O1000 (WEB-CAM PRO)',
-            'G20 G17 G40 G49 G80 G90',
-            `T${toolpath.tool.id} M6`,
-            `G43 H${toolpath.tool.id}`,
-            `S${toolpath.tool.rpm} M3`,
-            'G54',
-            'G0 Z5.0'
-        ];
-        
-        toolpath.operations.forEach(op => {
-            gcode.push(`G0 X${op.points[0].x.toFixed(3)} Y${op.points[0].y.toFixed(3)}`);
-            gcode.push(`G1 Z${op.points[0].z.toFixed(3)} F${toolpath.tool.plunge}`);
-            gcode.push(`G1 X${op.points[1].x.toFixed(3)} Y${op.points[1].y.toFixed(3)} F${op.feedrate}`);
-        });
-        
-        gcode.push('G0 Z5.0', 'M5', 'G28 G91 Z0', 'G90', 'M30', '%');
-        return gcode.join('\n');
+    
+    static async generateContour(model, tool, material) {
+        // Contour generation logic
+        // Similar structure to adaptive clearing but different algorithm
     }
 }
