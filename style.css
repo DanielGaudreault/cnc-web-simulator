@@ -1,45 +1,87 @@
+:root {
+    --primary: #2b579a;
+    --secondary: #e81123;
+    --dark: #1a1a1a;
+    --light: #f5f5f5;
+}
+
 body {
-  margin: 0;
-  overflow: hidden;
-  font-family: Arial, sans-serif;
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: var(--dark);
+    color: var(--light);
+    height: 100vh;
+    display: flex;
 }
 
-#container {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
+#app {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
 
-#canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
+.toolbar {
+    background: #333;
+    padding: 10px;
+    display: flex;
+    gap: 10px;
 }
 
-#toolbar {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(0,0,0,0.7);
-  padding: 10px;
-  border-radius: 5px;
-  color: white;
+.toolbar select, 
+.toolbar button {
+    padding: 8px 12px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
-button, input {
-  margin: 5px;
-  padding: 8px;
+.content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
 }
 
-#gcode-panel {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  height: 25%;
-  background: #1e1e1e;
-  color: #00ff00;
-  overflow: auto;
-  padding: 10px;
-  box-sizing: border-box;
-  font-family: monospace;
+.viewport {
+    flex: 2;
+    position: relative;
+}
+
+#renderCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.loading-bar {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    height: 4px;
+    background: var(--secondary);
+    transition: width 0.3s;
+}
+
+.editor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid #444;
+}
+
+#gcode-editor {
+    flex: 1;
+    background: #222;
+    color: #00ff00;
+    font-family: 'Consolas', monospace;
+    padding: 10px;
+    border: none;
+    resize: none;
+}
+
+.stats {
+    padding: 10px;
+    background: #333;
+    font-size: 12px;
 }
