@@ -20,16 +20,5 @@
         "stepdown": 0.5,
         "rpm": 15000,
         "description": "3mm ball nose for 3D contouring"
-    },
-    {
-        "id": "t3",
-        "name": "Chamfer Mill",
-        "diameter": 10.0,
-        "flutes": 3,
-        "feedrate": 1500,
-        "plunge": 400,
-        "stepdown": 3.0,
-        "rpm": 8000,
-        "description": "45° chamfer cutter"
     }
 ]
