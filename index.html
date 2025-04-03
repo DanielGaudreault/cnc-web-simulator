@@ -3,67 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebCAM Pro - Mastercam Viewer</title>
+    <title>WebCAM Pro</title>
     <link rel="stylesheet" href="style.css">
     <!-- Three.js -->
     <script src="lib/three.module.js"></script>
     <script src="lib/STLLoader.js"></script>
     <script src="lib/OrbitControls.js"></script>
-    <!-- DXF Parser -->
+    <!-- Parsers -->
     <script src="lib/dxf-parser.js"></script>
-    <!-- Mastercam Parser -->
+    <script src="parsers/geometry-utils.js"></script>
     <script src="parsers/mastercam-reader.js"></script>
+    <!-- CAM Core -->
+    <script src="cam-core.js"></script>
+    <!-- Post Processors -->
+    <script src="post-processors/haas.js"></script>
 </head>
 <body>
     <div id="app">
-        <div class="header">
-            <h1>WebCAM Pro</h1>
+        <header>
+            <h1>WebCAM Pro <span id="version">v2.1</span></h1>
             <div class="toolbar">
-                <input type="file" id="model-upload" accept=".stl,.dxf,.mcx,.mcam">
-                <select id="material-select"></select>
-                <select id="tool-select"></select>
-                <button id="generate-btn">Generate G-code</button>
+                <div class="file-upload">
+                    <label for="model-upload">📁 Open</label>
+                    <input type="file" id="model-upload" accept=".stl,.dxf,.mcx,.mcam">
+                </div>
+                <select id="tool-select" class="dropdown"></select>
+                <select id="material-select" class="dropdown"></select>
+                <button id="generate-btn" class="primary-btn">Generate Toolpath</button>
+                <button id="simulate-btn">Simulate</button>
             </div>
-        </div>
+        </header>
 
-        <div class="main-content">
-            <div class="viewport-container">
+        <main>
+            <div id="viewport-container">
                 <canvas id="renderCanvas"></canvas>
-                <div class="loading-overlay" id="loading-overlay">
-                    <div class="progress-bar"></div>
-                    <div class="status-text" id="status-text">Loading...</div>
+                <div id="hud">
+                    <div class="hud-item" id="file-info">No file loaded</div>
+                    <div class="hud-item" id="tool-info">No tool selected</div>
+                </div>
+                <div id="loading-overlay">
+                    <div class="spinner"></div>
+                    <div id="loading-text">Processing...</div>
                 </div>
             </div>
 
-            <div class="control-panel">
-                <div class="gcode-editor">
-                    <textarea id="gcode-output" spellcheck="false" placeholder="G-code will appear here..."></textarea>
+            <div id="control-panel">
+                <div class="tab-bar">
+                    <button class="tab-btn active" data-tab="gcode">G-code</button>
+                    <button class="tab-btn" data-tab="stats">Statistics</button>
                 </div>
-                <div class="stats-panel">
+                <div id="gcode-tab" class="tab-content active">
+                    <textarea id="gcode-output" spellcheck="false"></textarea>
+                </div>
+                <div id="stats-tab" class="tab-content">
                     <div class="stat-item">
-                        <span class="stat-label">File Type:</span>
-                        <span class="stat-value" id="file-type">None</span>
+                        <span>Cycle Time:</span>
+                        <span id="cycle-time">00:00</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Tool:</span>
-                        <span class="stat-value" id="current-tool">None</span>
+                        <span>Toolpath Length:</span>
+                        <span id="toolpath-length">0 mm</span>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
-    <!-- Libraries -->
-    <script src="lib/three.module.js"></script>
-    <script src="lib/STLLoader.js"></script>
-    <script src="lib/OrbitControls.js"></script>
-    <script src="lib/dxf-parser.js"></script>
-
-    <!-- Core Application -->
-    <script src="cam-core.js"></script>
-    <script src="post-processors/haas.js"></script>
-    <script src="post-processors/fanuc.js"></script>
-    <script src="post-processors/grbl.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
