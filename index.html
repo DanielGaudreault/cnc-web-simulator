@@ -1,92 +1,45 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Browser Mastercam</title>
-  <style>
-    body { margin: 0; font-family: Arial; }
-    #canvas { display: block; }
-    #ui {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      padding: 10px;
-      border-radius: 5px;
-    }
-    #gcode { 
-      position: absolute;
-      bottom: 0;
-      width: 100%;
-      height: 20vh;
-      background: #222;
-      color: lime;
-      overflow: auto;
-      padding: 10px;
-    }
-  </style>
+    <title>WebCAM Pro - Browser-Based Mastercam Alternative</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <!-- Local libs for offline use -->
+    <script src="libs/three.min.js"></script>
+    <script src="libs/stl-loader.js"></script>
+    <script src="libs/dxf-parser.js"></script>
+    <!-- WASM-compiled CAM core -->
+    <script async src="cam-engine/cam-core.wasm"></script>
 </head>
 <body>
-  <!-- 3D Viewer -->
-  <canvas id="canvas"></canvas>
-  
-  <!-- UI Controls -->
-  <div id="ui">
-    <input type="file" id="file-input" accept=".stl,.obj,.dxf">
-    <button id="generate-btn">Generate G-code</button>
-  </div>
-  
-  <!-- G-code Output -->
-  <pre id="gcode">; G-code will appear here</pre>
+    <div id="app-container">
+        <!-- 3D Viewport -->
+        <div id="viewport-container">
+            <canvas id="render-canvas"></canvas>
+            <div id="loading-bar"></div>
+        </div>
+        
+        <!-- Machine Simulation Panel -->
+        <div id="machine-panel">
+            <div class="machine-visualization"></div>
+            <div class="runtime-stats">
+                <span>Cycle Time: <span id="cycle-time">00:00</span></span>
+                <span>Tool: <span id="current-tool">T1</span></span>
+            </div>
+        </div>
+        
+        <!-- Toolpath Control Center -->
+        <div id="control-panel">
+            <div class="toolpath-actions">
+                <button id="generate-adaptive">Adaptive Clearing</button>
+                <button id="generate-contour">3D Contour</button>
+                <button id="simulate-toolpath">Full Simulation</button>
+            </div>
+            <div class="gcode-editor" contenteditable="true"></div>
+        </div>
+    </div>
 
-  <!-- Libraries from CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/STLLoader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dxf-parser@1.0.0/dist/dxf-parser.min.js"></script>
-
-  <!-- Main App -->
-  <script>
-    // 1. Setup Three.js
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    camera.position.z = 50;
-
-    // 2. File Loader
-    document.getElementById('file-input').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      
-      const loader = file.name.endsWith('.stl') 
-        ? new THREE.STLLoader() 
-        : new DxfParser();
-      
-      const model = await loader.loadAsync(URL.createObjectURL(file));
-      scene.add(new THREE.Mesh(model, new THREE.MeshNormalMaterial()));
-    });
-
-    // 3. Mock G-code Generator
-    document.getElementById('generate-btn').addEventListener('click', () => {
-      const mockGCode = [
-        "G90 G21 G17",
-        "G0 Z5",
-        "G0 X0 Y0",
-        "G1 Z-1 F100",
-        "G1 X10 Y10 F200",
-        "G0 Z5",
-        "M30"
-      ].join("\n");
-      
-      document.getElementById('gcode').textContent = mockGCode;
-    });
-
-    // 4. Animation Loop
-    function animate() {
-      requestAnimationFrame(animate);
-      renderer.render(scene, camera);
-    }
-    animate();
-  </script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
