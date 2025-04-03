@@ -1,55 +1,50 @@
-class HAASPostProcessor {
-    static generate(toolpath) {
-        if (!toolpath || !toolpath.operations) {
-            throw new Error('Invalid toolpath');
-        }
-        
-        const gcode = [];
-        
-        // Program header
-        gcode.push('%');
-        gcode.push(`O1000 (WEB-CAM PRO - ${new Date().toLocaleDateString()})`);
-        gcode.push('G20 G17 G40 G49 G80 G90'); // Safety block
-        gcode.push(`T${toolpath.tool.id} M6`);  // Tool change
-        gcode.push(`G43 H${toolpath.tool.id}`); // Tool length compensation
-        gcode.push(`S${toolpath.tool.rpm} M3`); // Spindle on
-        gcode.push('G54');                      // Work coordinate system
-        gcode.push('G0 Z5.0');                  // Safe Z
-        
-        // Toolpath operations
-        toolpath.operations.forEach((op, idx) => {
-            if (op.points.length < 2) return;
-            
-            // Rapid move to start
-            gcode.push(`G0 X${op.points[0].x.toFixed(3)} Y${op.points[0].y.toFixed(3)}`);
-            
-            // Plunge
-            gcode.push(`G1 Z${op.points[0].z.toFixed(3)} F${toolpath.tool.plunge}`);
-            
-            // Cutting moves
-            for (let i = 1; i < op.points.length; i++) {
-                gcode.push(
-                    `G1 X${op.points[i].x.toFixed(3)} ` +
-                    `Y${op.points[i].y.toFixed(3)} ` +
-                    `Z${op.points[i].z.toFixed(3)} ` +
-                    `F${op.feedrate}`
-                );
-            }
-            
-            // Retract every 10 operations
-            if (idx % 10 === 0) {
-                gcode.push('G0 Z5.0');
-            }
-        });
-        
-        // Program footer
-        gcode.push('G0 Z5.0');  // Final retract
-        gcode.push('M5');       // Spindle off
-        gcode.push('G28 G91 Z0'); // Return to Z home
-        gcode.push('G90');      // Absolute positioning
-        gcode.push('M30');      // Program end
-        gcode.push('%');        // End of file
-        
-        return gcode.join('\n');
+class HaasPostProcessor {
+    static getHeader() {
+        return `%
+O1000 (PROGRAM NAME)
+(POST PROCESSOR: HAAS)
+G20 (INCH)
+G90 (ABSOLUTE)
+G54 (WORK OFFSET)`;
+    }
+    
+    static getFooter() {
+        return `G53 G0 Z0 (MACHINE Z HOME)
+G53 G0 X0 Y0 (MACHINE XY HOME)
+M30
+%`;
+    }
+    
+    static getToolChangeCommand(toolNumber, diameter, length) {
+        return `\nT${toolNumber} M6 (TOOL CHANGE)
+G43 H${toolNumber} (TOOL LENGTH COMP)
+(TOOL DIAMETER: ${diameter.toFixed(4)})
+(TOOL LENGTH: ${length.toFixed(4)})\n`;
+    }
+    
+    static getSpindleOnCommand(speed, direction = "CW") {
+        const dirCode = direction === "CW" ? "M3" : "M4";
+        return `${dirCode} S${Math.round(speed)} (SPINDLE ON)\n`;
+    }
+    
+    static getSpindleOffCommand() {
+        return "M5 (SPINDLE OFF)\n";
+    }
+    
+    static getFeedrateCommand(feedrate) {
+        return `F${Math.round(feedrate)} (FEEDRATE)\n`;
+    }
+    
+    static getCoolantCommand(type) {
+        const code = type === "flood" ? "M8" : type === "mist" ? "M7" : "";
+        return code ? `${code} (COOLANT ON)\n` : "";
+    }
+    
+    static getRapidMoveCommand(x, y, z) {
+        return `G00 X${x.toFixed(4)} Y${y.toFixed(4)} Z${z.toFixed(4)} (RAPID)\n`;
+    }
+    
+    static getLinearMoveCommand(x, y, z) {
+        return `G01 X${x.toFixed(4)} Y${y.toFixed(4)} Z${z.toFixed(4)} (LINEAR)\n`;
     }
 }
