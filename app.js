@@ -1,87 +1,130 @@
-import { AdaptiveClearing } from './cam-engine/adaptive-clearing.js';
-import { Contour3D } from './cam-engine/3d-contouring.js';
-import { PostProcessor } from './cam-engine/post-processors/haas.js';
-
-class WebCAMPro {
+class WebCAM {
     constructor() {
         this.initScene();
         this.loadToolLibrary();
-        this.setupEventHandlers();
-        this.startPerformanceMonitor();
+        this.setupEventListeners();
     }
 
     initScene() {
-        // Advanced Three.js setup with multiple render targets
-        this.renderer = new THREE.WebGLRenderer({
-            canvas: document.getElementById('render-canvas'),
-            antialias: true,
-            preserveDrawingBuffer: true // For CNC screenshot feature
-        });
-        this.renderer.setPixelRatio(window.devicePixelRatio * 1.5);
-        
-        // Industrial-grade lighting setup
+        // Scene setup
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x1a1a1a);
-        this.setupLights();
         
-        // Multi-camera system
-        this.cameras = {
-            perspective: new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000),
-            orthographic: new THREE.OrthographicCamera(-50, 50, 50, -50, 0.1, 1000)
-        };
+        // Camera
+        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera.position.z = 50;
         
-        // Advanced grid with imperial/metric toggle
-        this.workspaceGrid = new THREE.Group();
-        this.buildWorkspaceGrid('metric');
-        this.scene.add(this.workspaceGrid);
+        // Renderer
+        this.renderer = new THREE.WebGLRenderer({ 
+            canvas: document.getElementById('renderCanvas'),
+            antialias: true 
+        });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        
+        // Controls
+        this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+        
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(1, 1, 1);
+        this.scene.add(ambientLight, directionalLight);
+        
+        // Grid
+        const gridHelper = new THREE.GridHelper(100, 100);
+        this.scene.add(gridHelper);
+        
+        // Animation loop
+        this.animate();
     }
 
-    async generateAdaptiveToolpath() {
-        // Uses Web Workers for parallel processing
-        const worker = new Worker('./cam-engine/adaptive-worker.js');
+    async loadToolLibrary() {
+        const response = await fetch('assets/tools.json');
+        this.tools = await response.json();
         
-        worker.postMessage({
-            mesh: this.currentModel.toJSON(),
-            tool: this.selectedTool,
-            material: this.selectedMaterial
+        const select = document.getElementById('tool-select');
+        this.tools.forEach(tool => {
+            const option = document.createElement('option');
+            option.value = tool.id;
+            option.textContent = `${tool.name} (${tool.diameter}mm)`;
+            select.appendChild(option);
         });
+    }
 
-        worker.onmessage = (e) => {
-            const { toolpath, gcode } = e.data;
-            this.visualizeToolpath(toolpath);
-            this.gcodeEditor.value = gcode;
-            this.estimateCycleTime();
-        };
+    setupEventListeners() {
+        document.getElementById('model-upload').addEventListener('change', (e) => {
+            this.loadModel(e.target.files[0]);
+        });
+        
+        document.getElementById('generate-btn').addEventListener('click', () => {
+            this.generateToolpath();
+        });
+        
+        window.addEventListener('resize', () => {
+            this.camera.aspect = window.innerWidth / window.innerHeight;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    }
+
+    async loadModel(file) {
+        const loader = file.name.endsWith('.stl') 
+            ? new THREE.STLLoader() 
+            : new DxfParser();
+        
+        const model = await loader.loadAsync(URL.createObjectURL(file));
+        const mesh = new THREE.Mesh(model, new THREE.MeshStandardMaterial({
+            color: 0x00aaff,
+            metalness: 0.5,
+            roughness: 0.7
+        }));
+        
+        // Center model
+        model.computeBoundingBox();
+        const center = model.boundingBox.getCenter(new THREE.Vector3());
+        mesh.position.sub(center);
+        
+        this.scene.add(mesh);
+        this.currentModel = mesh;
+    }
+
+    async generateToolpath() {
+        const toolId = document.getElementById('tool-select').value;
+        const selectedTool = this.tools.find(t => t.id === toolId);
+        
+        const progressBar = document.getElementById('progressBar');
+        progressBar.style.width = '0%';
+        
+        // Simulate progress
+        for (let i = 0; i <= 100; i++) {
+            await new Promise(resolve => setTimeout(resolve, 20));
+            progressBar.style.width = `${i}%`;
+        }
+        
+        // Generate toolpath
+        const toolpath = CAMCore.generateAdaptiveClearing(
+            this.currentModel,
+            selectedTool
+        );
+        
+        // Post-process
+        const gcode = PostProcessor.haas(toolpath);
+        document.getElementById('gcode-editor').value = gcode;
+        
+        // Visualize
+        this.visualizeToolpath(toolpath);
     }
 
     visualizeToolpath(toolpath) {
-        // Advanced visualization with:
-        // - Tool engagement angle coloring
-        // - Chip load heatmaps
-        // - Collision detection preview
+        // Implementation for toolpath visualization
+    }
+
+    animate() {
+        requestAnimationFrame(() => this.animate());
+        this.controls.update();
+        this.renderer.render(this.scene, this.camera);
     }
 }
 
-// Industrial-grade post processor
-class HAAS_PostProcessor {
-    constructor() {
-        this.safetyBlocks = [
-            'G20 G17 G40 G49 G80 G90',
-            'G54',
-            'M8',
-            'M3 S12000'
-        ];
-    }
-
-    generate(gcodeData) {
-        return [
-            ...this.safetyBlocks,
-            ...gcodeData.operations.map(op => this.convertOperation(op)),
-            'M5 M9',
-            'M30'
-        ].join('\n');
-    }
-}
-
-// Start the application
-new WebCAMPro();
+// Initialize
+new WebCAM();
