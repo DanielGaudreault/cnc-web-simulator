@@ -5,28 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebMastercam</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="libs/three.min.js"></script>
+    <script src="libs/OrbitControls.js"></script>
+    <script src="libs/STLLoader.js"></script>
+    <script src="libs/dxf-parser.js"></script>
+    <script src="libs/occt-import-js.js"></script>
+    <script src="libs/step-parser.js"></script>
+    <script src="parsers/geometry-utils.js"></script>
+    <script src="parsers/mastercam-reader.js"></script>
+    <script src="post-processors/fanuc.js"></script>
+    <script src="post-processors/grbl.js"></script>
+    <script src="post-processors/haas.js"></script>
+    <script src="gcode-generator.js"></script>
+    <script src="cam-core.js"></script>
     <script src="app.js" defer></script>
 </head>
 <body>
     <div id="container">
         <header>
-            <h1>WebMastercam</h1>
+            <div id="logo">WebMastercam</div>
             <div class="toolbar">
-                <button id="open-file">Open File</button>
-                <button id="save-file">Save File</button>
-                <input type="file" id="file-input" accept=".mcam,.emcam,.opst" style="display:none;">
+                <button id="file-new">New</button>
+                <button id="file-open">Open</button>
+                <button id="file-save">Save</button>
+                <button id="file-export">Export G-code</button>
+                <input type="file" id="file-input" accept=".mcam,.mcx,.emcam,.opst" style="display:none;">
             </div>
         </header>
         <div id="main-content">
             <div id="sidebar">
-                <div id="toolpaths"></div>
-                <div id="properties"></div>
+                <div class="sidebar-tab" id="toolpaths-tab">Toolpaths</div>
+                <div class="sidebar-tab" id="operations-tab">Operations</div>
+                <div class="sidebar-tab" id="properties-tab">Properties</div>
+                <div id="toolpaths-list" class="tab-content active"></div>
+                <div id="operations-list" class="tab-content"></div>
+                <div id="properties-panel" class="tab-content"></div>
             </div>
             <div id="viewer-container">
                 <canvas id="renderCanvas"></canvas>
+                <div id="status-bar">
+                    <span id="cursor-position">X: 0.000, Y: 0.000, Z: 0.000</span>
+                    <span id="file-info">No file loaded</span>
+                </div>
             </div>
         </div>
     </div>
