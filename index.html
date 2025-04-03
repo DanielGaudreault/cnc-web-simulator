@@ -1,45 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>WebCAM Pro - Browser-Based Mastercam Alternative</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebCAM Pro - Browser-Based CAM Solution</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Local libs for offline use -->
-    <script src="libs/three.min.js"></script>
-    <script src="libs/stl-loader.js"></script>
-    <script src="libs/dxf-parser.js"></script>
-    <!-- WASM-compiled CAM core -->
-    <script async src="cam-engine/cam-core.wasm"></script>
 </head>
 <body>
-    <div id="app-container">
-        <!-- 3D Viewport -->
-        <div id="viewport-container">
-            <canvas id="render-canvas"></canvas>
-            <div id="loading-bar"></div>
-        </div>
-        
-        <!-- Machine Simulation Panel -->
-        <div id="machine-panel">
-            <div class="machine-visualization"></div>
-            <div class="runtime-stats">
-                <span>Cycle Time: <span id="cycle-time">00:00</span></span>
-                <span>Tool: <span id="current-tool">T1</span></span>
-            </div>
-        </div>
-        
-        <!-- Toolpath Control Center -->
-        <div id="control-panel">
-            <div class="toolpath-actions">
+    <div id="app">
+        <div class="header">
+            <h1>WebCAM Pro</h1>
+            <div class="toolbar">
+                <input type="file" id="model-upload" accept=".stl,.dxf">
+                <select id="material-select"></select>
+                <select id="tool-select"></select>
                 <button id="generate-adaptive">Adaptive Clearing</button>
-                <button id="generate-contour">3D Contour</button>
-                <button id="simulate-toolpath">Full Simulation</button>
+                <button id="generate-contour">Contour</button>
+                <button id="simulate">Simulate</button>
+                <button id="post-process">Post Process</button>
             </div>
-            <div class="gcode-editor" contenteditable="true"></div>
+        </div>
+
+        <div class="main-content">
+            <div class="viewport-container">
+                <canvas id="renderCanvas"></canvas>
+                <div class="loading-overlay" id="loading-overlay">
+                    <div class="progress-bar" id="progress-bar"></div>
+                    <div class="status-text" id="status-text">Loading...</div>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <div class="gcode-editor">
+                    <textarea id="gcode-output" spellcheck="false"></textarea>
+                </div>
+                <div class="stats-panel">
+                    <div class="stat-item">
+                        <span class="stat-label">Cycle Time:</span>
+                        <span class="stat-value" id="cycle-time">00:00</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Tool:</span>
+                        <span class="stat-value" id="current-tool">None</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Material:</span>
+                        <span class="stat-value" id="current-material">None</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script type="module" src="app.js"></script>
+    <!-- Libraries -->
+    <script src="lib/three.module.js"></script>
+    <script src="lib/STLLoader.js"></script>
+    <script src="lib/OrbitControls.js"></script>
+    <script src="lib/dxf-parser.js"></script>
+
+    <!-- Core Application -->
+    <script src="cam-core.js"></script>
+    <script src="post-processors/haas.js"></script>
+    <script src="post-processors/fanuc.js"></script>
+    <script src="post-processors/grbl.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
