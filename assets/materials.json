@@ -1,10 +1,22 @@
 {
     "aluminum": {
         "feedPerTooth": 0.1,
-        "surfaceSpeed": 250
+        "surfaceSpeed": 250,
+        "description": "6061 Aluminum"
     },
     "steel": {
         "feedPerTooth": 0.05,
-        "surfaceSpeed": 100
+        "surfaceSpeed": 100,
+        "description": "Mild Steel"
+    },
+    "plastic": {
+        "feedPerTooth": 0.15,
+        "surfaceSpeed": 300,
+        "description": "ABS Plastic"
+    },
+    "brass": {
+        "feedPerTooth": 0.12,
+        "surfaceSpeed": 200,
+        "description": "Free-Machining Brass"
     }
 }
