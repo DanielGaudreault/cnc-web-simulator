@@ -5,76 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebCAM Pro</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Three.js -->
     <script src="lib/three.module.js"></script>
     <script src="lib/STLLoader.js"></script>
     <script src="lib/OrbitControls.js"></script>
-    <!-- Parsers -->
     <script src="lib/dxf-parser.js"></script>
     <script src="parsers/geometry-utils.js"></script>
     <script src="parsers/mastercam-reader.js"></script>
-    <!-- CAM Core -->
     <script src="cam-core.js"></script>
-    <!-- Post Processors -->
     <script src="post-processors/haas.js"></script>
 </head>
 <body>
     <div id="app">
         <header>
-            <h1>WebCAM Pro <span id="version">v2.1</span></h1>
+            <h1>WebCAM Pro</h1>
             <div class="toolbar">
-                <div class="file-upload">
-                    <label for="model-upload">📁 Open</label>
-                    <input type="file" id="model-upload" accept=".stl,.dxf,.mcx,.mcam">
-                </div>
-                <select id="tool-select" class="dropdown"></select>
-                <select id="material-select" class="dropdown"></select>
-                <button id="generate-btn" class="primary-btn">Generate Toolpath</button>
-                <button id="simulate-btn">Simulate</button>
+                <input type="file" id="model-upload" accept=".stl,.dxf,.mcx,.mcam">
+                <select id="tool-select"></select>
+                <select id="material-select"></select>
+                <button id="generate-btn">Generate Toolpath</button>
             </div>
         </header>
 
         <main>
             <div id="viewport-container">
                 <canvas id="renderCanvas"></canvas>
-                <div id="hud">
-                    <div class="hud-item" id="file-info">No file loaded</div>
-                    <div class="hud-item" id="tool-info">No tool selected</div>
-                </div>
                 <div id="loading-overlay">
                     <div class="spinner"></div>
-                    <div id="loading-text">Processing...</div>
+                    <div id="loading-text">Loading...</div>
                 </div>
             </div>
 
             <div id="control-panel">
-                <div class="tab-bar">
-                    <button class="tab-btn active" data-tab="gcode">G-code</button>
-                    <button class="tab-btn" data-tab="stats">Statistics</button>
-                </div>
-                <div id="gcode-tab" class="tab-content active">
-                    <textarea id="gcode-output" spellcheck="false"></textarea>
-                </div>
-                <div id="stats-tab" class="tab-content">
-                    <div class="stat-item">
-                        <span>Cycle Time:</span>
-                        <span id="cycle-time">00:00</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Toolpath Length:</span>
-                        <span id="toolpath-length">0 mm</span>
-                    </div>
-                </div>
+                <textarea id="gcode-output" spellcheck="false"></textarea>
+                <div id="debug-console"></div>
             </div>
         </main>
     </div>
-    <div id="error-modal" class="modal">
-    <div class="modal-content">
-        <h3>Error Loading File</h3>
-        <pre id="error-details"></pre>
-        <button id="close-error">Close</button>
-    </div>
-</div>
 
     <script src="app.js"></script>
 </body>
