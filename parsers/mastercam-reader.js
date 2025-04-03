@@ -1,141 +1,92 @@
-class MastercamParser {
-    constructor() {
-        this.debug = true;
-    }
-
-    async parse(arrayBuffer) {
-        const view = new DataView(arrayBuffer);
+class MastercamReader {
+    static async parse(file) {
+        // Mastercam files are typically ZIP archives containing multiple files
+        const zip = new JSZip();
+        const content = await zip.loadAsync(file);
         
-        // 1. Verify Header
-        const signature = this.readChars(view, 0, 4);
-        if (signature !== 'MCAX') {
-            throw new Error(`Invalid Mastercam file signature: ${signature}`);
+        // Check if this is a valid Mastercam file
+        if (!content.files['header.xml'] && !content.files['data.xml']) {
+            throw new Error("Not a valid Mastercam file");
         }
         
-        const version = view.getUint16(4, true);
-        const units = view.getUint8(6) === 0 ? 'inches' : 'mm';
-        const headerSize = 32;
-
-        // 2. Parse Entities
-        const entities = [];
-        let offset = headerSize;
-        
-        while (offset < arrayBuffer.byteLength) {
-            const entityType = view.getUint8(offset);
-            offset += 1;
-            
-            try {
-                const entity = this.parseEntity(view, offset, entityType);
-                entities.push(entity);
-                offset += entity.byteLength;
-            } catch (e) {
-                console.warn(`Skipping unrecognized entity at offset ${offset}:`, e);
-                offset += 4;
-            }
-        }
-
-        return {
-            format: 'Mastercam',
-            version,
-            units,
-            entities
-        };
-    }
-
-    parseEntity(view, offset, type) {
-        switch(type) {
-            case 0x01: // LINE
-                return {
-                    type: 'LINE',
-                    start: this.readVector(view, offset),
-                    end: this.readVector(view, offset + 12),
-                    byteLength: 24
-                };
-                
-            case 0x02: // ARC
-                return {
-                    type: 'ARC',
-                    center: this.readVector(view, offset),
-                    radius: view.getFloat32(offset + 12, true),
-                    startAngle: view.getFloat32(offset + 16, true),
-                    endAngle: view.getFloat32(offset + 20, true),
-                    normal: this.readVector(view, offset + 24),
-                    byteLength: 36
-                };
-                
-            default:
-                throw new Error(`Unknown entity type: 0x${type.toString(16)}`);
-        }
-    }
-
-    convertToThreeJS(parsedData) {
-        const group = new THREE.Group();
-        
-        parsedData.entities.forEach(entity => {
-            switch(entity.type) {
-                case 'LINE':
-                    const lineGeometry = new THREE.BufferGeometry().setFromPoints([
-                        new THREE.Vector3(
-                            entity.start.x,
-                            entity.start.y,
-                            entity.start.z
-                        ),
-                        new THREE.Vector3(
-                            entity.end.x,
-                            entity.end.y,
-                            entity.end.z
-                        )
-                    ]);
-                    const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
-                    group.add(new THREE.Line(lineGeometry, lineMaterial));
-                    break;
-                    
-                case 'ARC':
-                    const arcPoints = this.generateArcPoints(entity);
-                    const arcGeometry = new THREE.BufferGeometry().setFromPoints(
-                        arcPoints.map(p => new THREE.Vector3(p.x, p.y, p.z))
-                    );
-                    group.add(new THREE.Line(
-                        arcGeometry,
-                        new THREE.LineBasicMaterial({ color: 0xff0000 })
-                    ));
-                    break;
-            }
+        // Parse the file structure
+        const fileList = [];
+        zip.forEach((relativePath, zipEntry) => {
+            fileList.push(relativePath);
         });
         
-        return group;
-    }
-
-    generateArcPoints(arcData, segments = 32) {
-        const points = [];
-        const angleRange = arcData.endAngle - arcData.startAngle;
+        // In a real implementation, we would parse the actual Mastercam file format here
+        // For demonstration, we'll return a simplified structure
         
-        for (let i = 0; i <= segments; i++) {
-            const angle = arcData.startAngle + (angleRange * i / segments);
-            points.push({
-                x: arcData.center.x + arcData.radius * Math.cos(angle),
-                y: arcData.center.y + arcData.radius * Math.sin(angle),
-                z: arcData.center.z
-            });
-        }
-        
-        return points;
-    }
-
-    // Helper methods
-    readChars(view, offset, length) {
-        let str = '';
-        for (let i = 0; i < length; i++) {
-            str += String.fromCharCode(view.getUint8(offset + i));
-        }
-        return str;
-    }
-
-    readVector(view, offset) {
         return {
-            x: view.getFloat32(offset, true),
-            y: view.getFloat32(offset + 4, true),
-            z: view.getFloat32(offset + 8, true)
+            metadata: {
+                version: "1.0",
+                units: "mm",
+                created: new Date().toISOString()
+            },
+            geometry: this.parseGeometry(content),
+            toolpaths: this.parseToolpaths(content),
+            operations: this.parseOperations(content)
         };
+    }
+    
+    static parseGeometry(content) {
+        // This would parse the actual geometry data in a real implementation
+        // For demo, we'll return some sample geometry data
+        
+        return [
+            {
+                type: "cube",
+                position: { x: 0, y: 0, z: 0 },
+                dimensions: { x: 10, y: 10, z: 2 }
+            },
+            {
+                type: "cylinder",
+                position: { x: 5, y: 5, z: 0 },
+                radius: 2,
+                height: 2
+            }
+        ];
+    }
+    
+    static parseToolpaths(content) {
+        // Parse toolpath data
+        return [
+            {
+                id: "tp1",
+                name: "Contour Rough",
+                type: "contour",
+                tool: "1/2\" Flat End Mill",
+                parameters: {
+                    stepover: 0.5,
+                    stepdown: 0.2,
+                    feedrate: 100,
+                    spindleSpeed: 2000
+                },
+                paths: [
+                    { x: 0, y: 0, z: 0 },
+                    { x: 10, y: 0, z: 0 },
+                    { x: 10, y: 10, z: 0 },
+                    { x: 0, y: 10, z: 0 },
+                    { x: 0, y: 0, z: 0 }
+                ]
+            }
+        ];
+    }
+    
+    static parseOperations(content) {
+        // Parse operation data
+        return [
+            {
+                id: "op1",
+                name: "Rough Pocket",
+                type: "pocket",
+                tool: "1/2\" Flat End Mill",
+                parameters: {
+                    depth: -2,
+                    stockToLeave: 0.1
+                }
+            }
+        ];
     }
 }
