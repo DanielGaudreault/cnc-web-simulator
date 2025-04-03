@@ -17,16 +17,16 @@ class HAASPostProcessor {
         gcode.push('G0 Z5.0');                  // Safe Z
         
         // Toolpath operations
-        toolpath.operations.forEach((op, index) => {
+        toolpath.operations.forEach((op, idx) => {
             if (op.points.length < 2) return;
             
-            // Rapid move to start position
+            // Rapid move to start
             gcode.push(`G0 X${op.points[0].x.toFixed(3)} Y${op.points[0].y.toFixed(3)}`);
             
             // Plunge
             gcode.push(`G1 Z${op.points[0].z.toFixed(3)} F${toolpath.tool.plunge}`);
             
-            // Cutting move
+            // Cutting moves
             for (let i = 1; i < op.points.length; i++) {
                 gcode.push(
                     `G1 X${op.points[i].x.toFixed(3)} ` +
@@ -35,10 +35,15 @@ class HAASPostProcessor {
                     `F${op.feedrate}`
                 );
             }
+            
+            // Retract every 10 operations
+            if (idx % 10 === 0) {
+                gcode.push('G0 Z5.0');
+            }
         });
         
         // Program footer
-        gcode.push('G0 Z5.0');  // Retract
+        gcode.push('G0 Z5.0');  // Final retract
         gcode.push('M5');       // Spindle off
         gcode.push('G28 G91 Z0'); // Return to Z home
         gcode.push('G90');      // Absolute positioning
