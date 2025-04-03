@@ -92,24 +92,49 @@ class WebCAMPro {
         }
     }
 
-    async loadMaterialLibrary() {
-        try {
-            const response = await fetch('assets/materials.json');
-            this.materials = await response.json();
-            
-            const select = document.getElementById('material-select');
-            select.innerHTML = '<option value="">Select Material</option>';
-            
-            Object.keys(this.materials).forEach(key => {
-                const option = document.createElement('option');
-                option.value = key;
-                option.textContent = key.charAt(0).toUpperCase() + key.slice(1);
-                select.appendChild(option);
-            });
-        } catch (error) {
-            console.error('Failed to load material library:', error);
-        }
+    async loadMastercamFile(file) {
+    console.groupCollapsed(`Loading Mastercam file: ${file.name}`);
+    try {
+        // 1. Read file
+        console.log("Reading file contents...");
+        const arrayBuffer = await file.arrayBuffer();
+        
+        // 2. Parse with debug
+        console.log("Parsing Mastercam data...");
+        const parsedData = await this.mastercamParser.parse(arrayBuffer);
+        console.log("Parsed data:", parsedData);
+        
+        // 3. Convert to Three.js
+        console.log("Converting to Three.js...");
+        const model = this.mastercamParser.convertToThreeJS(parsedData);
+        
+        // 4. Center model
+        console.log("Centering model...");
+        model.geometry.computeBoundingBox();
+        const center = model.geometry.boundingBox.getCenter(new THREE.Vector3());
+        model.position.sub(center);
+        
+        // 5. Add to scene
+        console.log("Adding to scene...");
+        this.scene.add(model);
+        this.currentModel = model;
+        
+        // 6. Adjust camera
+        console.log("Adjusting camera...");
+        const size = model.geometry.boundingBox.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        this.camera.position.z = maxDim * 2;
+        this.controls.target.copy(center);
+        this.controls.update();
+        
+        console.log("Mastercam file loaded successfully");
+    } catch (error) {
+        console.error("Failed to load Mastercam file:", error);
+        throw error;
+    } finally {
+        console.groupEnd();
     }
+}
 
     setupEventListeners() {
         // File upload
