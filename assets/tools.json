@@ -1,24 +1,7 @@
 [
     {
-        "id": "t1",
-        "name": "Flat End Mill",
-        "diameter": 6.0,
+        "id": "fem-0.5",
+        "name": "1/2\" Flat End Mill",
+        "type": "endmill",
+        "diameter": 0.5,
         "flutes": 4,
-        "feedrate": 1200,
-        "plunge": 300,
-        "stepdown": 2.0,
-        "rpm": 10000,
-        "description": "General purpose 6mm end mill"
-    },
-    {
-        "id": "t2",
-        "name": "Ball Nose",
-        "diameter": 3.0,
-        "flutes": 2,
-        "feedrate": 800,
-        "plunge": 200,
-        "stepdown": 0.5,
-        "rpm": 15000,
-        "description": "3mm ball nose for 3D contouring"
-    }
-]
