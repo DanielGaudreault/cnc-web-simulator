@@ -3,45 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebCAM Pro</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="lib/three.module.js"></script>
-    <script src="lib/STLLoader.js"></script>
-    <script src="lib/OrbitControls.js"></script>
-    <script src="lib/dxf-parser.js"></script>
-    <script src="parsers/geometry-utils.js"></script>
-    <script src="parsers/mastercam-reader.js"></script>
-    <script src="cam-core.js"></script>
-    <script src="post-processors/haas.js"></script>
+    <title>WebMastercam</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="app.js" defer></script>
 </head>
 <body>
-    <div id="app">
+    <div id="container">
         <header>
-            <h1>WebCAM Pro</h1>
+            <h1>WebMastercam</h1>
             <div class="toolbar">
-                <input type="file" id="model-upload" accept=".stl,.dxf,.mcx,.mcam">
-                <select id="tool-select"></select>
-                <select id="material-select"></select>
-                <button id="generate-btn">Generate Toolpath</button>
+                <button id="open-file">Open File</button>
+                <button id="save-file">Save File</button>
+                <input type="file" id="file-input" accept=".mcam,.emcam,.opst" style="display:none;">
             </div>
         </header>
-
-        <main>
-            <div id="viewport-container">
+        <div id="main-content">
+            <div id="sidebar">
+                <div id="toolpaths"></div>
+                <div id="properties"></div>
+            </div>
+            <div id="viewer-container">
                 <canvas id="renderCanvas"></canvas>
-                <div id="loading-overlay">
-                    <div class="spinner"></div>
-                    <div id="loading-text">Loading...</div>
-                </div>
             </div>
-
-            <div id="control-panel">
-                <textarea id="gcode-output" spellcheck="false"></textarea>
-                <div id="debug-console"></div>
-            </div>
-        </main>
+        </div>
     </div>
-
-    <script src="app.js"></script>
 </body>
 </html>
