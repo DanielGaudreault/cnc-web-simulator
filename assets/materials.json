@@ -1,12 +1,23 @@
-{
-    "aluminum": {
-        "feedPerTooth": 0.1,
-        "surfaceSpeed": 250,
-        "description": "6061 Aluminum"
+[
+    {
+        "id": "aluminum-6061",
+        "name": "Aluminum 6061",
+        "type": "metal",
+        "cuttingSpeed": 250,
+        "feedPerTooth": 0.003
     },
-    "steel": {
-        "feedPerTooth": 0.05,
-        "surfaceSpeed": 100,
-        "description": "Mild Steel"
+    {
+        "id": "steel-mild",
+        "name": "Mild Steel",
+        "type": "metal",
+        "cuttingSpeed": 100,
+        "feedPerTooth": 0.002
+    },
+    {
+        "id": "abs-plastic",
+        "name": "ABS Plastic",
+        "type": "plastic",
+        "cuttingSpeed": 300,
+        "feedPerTooth": 0.005
     }
-}
+]
