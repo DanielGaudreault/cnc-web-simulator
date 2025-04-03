@@ -4,8 +4,11 @@ class WebCAMPro {
         this.selectedTool = null;
         this.selectedMaterial = null;
         this.toolpath = null;
+        this.mastercamParser = null;
         
         this.initThreeJS();
+        this.initUI();
+        this.initMastercamSupport();
         this.loadToolLibrary();
         this.loadMaterialLibrary();
         this.setupEventListeners();
@@ -15,22 +18,16 @@ class WebCAMPro {
     initThreeJS() {
         // Scene
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x1e1e1e);
+        this.scene.background = new THREE.Color(0x1a1a1a);
         
         // Camera
-        this.camera = new THREE.PerspectiveCamera(
-            75, 
-            window.innerWidth / window.innerHeight, 
-            0.1, 
-            1000
-        );
-        this.camera.position.set(50, 50, 50);
+        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera.position.set(100, 100, 100);
         
         // Renderer
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById('renderCanvas'),
-            antialias: true,
-            powerPreference: "high-performance"
+            antialias: true
         });
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -38,7 +35,6 @@ class WebCAMPro {
         // Controls
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
-        this.controls.dampingFactor = 0.25;
         
         // Lighting
         const ambientLight = new THREE.AmbientLight(0x404040);
@@ -47,13 +43,27 @@ class WebCAMPro {
         this.scene.add(ambientLight, directionalLight);
         
         // Helpers
-        const gridHelper = new THREE.GridHelper(100, 100);
+        const gridHelper = new THREE.GridHelper(200, 50);
         this.scene.add(gridHelper);
         
-        // Axes helper (toggle with key)
-        this.axesHelper = new THREE.AxesHelper(20);
+        // Axes helper
+        this.axesHelper = new THREE.AxesHelper(50);
         this.axesHelper.visible = false;
         this.scene.add(this.axesHelper);
+    }
+
+    initUI() {
+        // Initialize any UI components
+    }
+
+    async initMastercamSupport() {
+        try {
+            // Load Mastercam parser
+            this.mastercamParser = new MastercamParser();
+            console.log("Mastercam support initialized");
+        } catch (error) {
+            console.error("Failed to initialize Mastercam support:", error);
+        }
     }
 
     async loadToolLibrary() {
@@ -69,12 +79,6 @@ class WebCAMPro {
                 option.value = tool.id;
                 option.textContent = `${tool.name} (Ø${tool.diameter}mm)`;
                 select.appendChild(option);
-            });
-            
-            select.addEventListener('change', (e) => {
-                this.selectedTool = this.tools.find(t => t.id === e.target.value);
-                document.getElementById('current-tool').textContent = 
-                    this.selectedTool ? this.selectedTool.name : 'None';
             });
         } catch (error) {
             console.error('Failed to load tool library:', error);
@@ -95,58 +99,31 @@ class WebCAMPro {
                 option.textContent = key.charAt(0).toUpperCase() + key.slice(1);
                 select.appendChild(option);
             });
-            
-            select.addEventListener('change', (e) => {
-                this.selectedMaterial = this.materials[e.target.value];
-                document.getElementById('current-material').textContent = 
-                    e.target.value || 'None';
-            });
         } catch (error) {
             console.error('Failed to load material library:', error);
         }
     }
 
     setupEventListeners() {
-        // Model upload
+        // File upload
         document.getElementById('model-upload').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
             
             this.showLoading(true, `Loading ${file.name}...`);
-            
             try {
                 await this.loadModel(file);
-                this.showLoading(false);
             } catch (error) {
                 console.error('Error loading model:', error);
+                alert(`Error: ${error.message}`);
+            } finally {
                 this.showLoading(false);
-                alert(`Failed to load model: ${error.message}`);
             }
         });
         
         // Toolpath generation
-        document.getElementById('generate-adaptive').addEventListener('click', async () => {
-            if (!this.validateSelection()) return;
-            
-            this.showLoading(true, 'Generating adaptive toolpath...');
-            
-            try {
-                this.toolpath = await CAMCore.generateAdaptiveClearing(
-                    this.currentModel,
-                    this.selectedTool,
-                    this.selectedMaterial
-                );
-                
-                const gcode = HAASPostProcessor.generate(this.toolpath);
-                document.getElementById('gcode-output').value = gcode;
-                this.visualizeToolpath(this.toolpath);
-                this.updateStats();
-                this.showLoading(false);
-            } catch (error) {
-                console.error('Error generating toolpath:', error);
-                this.showLoading(false);
-                alert(`Toolpath generation failed: ${error.message}`);
-            }
+        document.getElementById('generate-btn').addEventListener('click', () => {
+            this.generateToolpath();
         });
         
         // Window resize
@@ -163,161 +140,135 @@ class WebCAMPro {
             obj => obj.type !== 'Mesh' || obj.isHelper
         );
         
-        let geometry;
+        const extension = file.name.split('.').pop().toLowerCase();
         
-        if (file.name.endsWith('.stl')) {
-            const loader = new THREE.STLLoader();
-            geometry = await loader.loadAsync(URL.createObjectURL(file));
-        } else if (file.name.endsWith('.dxf')) {
-            const parser = new DxfParser();
-            const text = await file.text();
-            const dxf = parser.parseSync(text);
-            geometry = this.convertDxfToGeometry(dxf);
-        } else {
-            throw new Error('Unsupported file format');
+        try {
+            if (['mcx', 'mcam'].includes(extension)) {
+                await this.loadMastercamFile(file);
+            } else if (['stl'].includes(extension)) {
+                await this.loadSTLFile(file);
+            } else if (['dxf'].includes(extension)) {
+                await this.loadDXFFile(file);
+            } else {
+                throw new Error('Unsupported file format');
+            }
+        } catch (error) {
+            console.error(`Error loading ${extension} file:`, error);
+            throw error;
+        }
+    }
+
+    async loadMastercamFile(file) {
+        if (!this.mastercamParser) {
+            throw new Error('Mastercam parser not initialized');
         }
         
-        // Create mesh
-        const material = new THREE.MeshStandardMaterial({
-            color: 0x00aaff,
-            metalness: 0.3,
-            roughness: 0.7,
-            side: THREE.DoubleSide
-        });
-        
-        const mesh = new THREE.Mesh(geometry, material);
+        const parsedData = await this.mastercamParser.parse(file);
+        const model = this.mastercamParser.convertToThreeJS(parsedData);
         
         // Center model
-        geometry.computeBoundingBox();
-        const boundingBox = geometry.boundingBox;
-        const center = new THREE.Vector3();
-        boundingBox.getCenter(center);
-        mesh.position.sub(center);
+        model.geometry.computeBoundingBox();
+        const center = model.geometry.boundingBox.getCenter(new THREE.Vector3());
+        model.position.sub(center);
         
-        this.scene.add(mesh);
-        this.currentModel = mesh;
+        this.scene.add(model);
+        this.currentModel = model;
         
         // Adjust camera
-        const size = boundingBox.getSize(new THREE.Vector3());
+        const size = model.geometry.boundingBox.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
         this.camera.position.z = maxDim * 2;
         this.controls.target.copy(center);
         this.controls.update();
     }
 
-    convertDxfToGeometry(dxf) {
-        // Convert DXF entities to Three.js geometry
-        const shapes = [];
+    async loadSTLFile(file) {
+        const loader = new THREE.STLLoader();
+        const geometry = await loader.loadAsync(URL.createObjectURL(file));
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x00aaff,
+            metalness: 0.3,
+            roughness: 0.7
+        });
         
+        const mesh = new THREE.Mesh(geometry, material);
+        this.scene.add(mesh);
+        this.currentModel = mesh;
+    }
+
+    async loadDXFFile(file) {
+        const text = await file.text();
+        const parser = new DxfParser();
+        const dxf = parser.parseSync(text);
+        
+        const group = new THREE.Group();
         dxf.entities.forEach(entity => {
             if (entity.type === 'LINE') {
                 const geometry = new THREE.BufferGeometry().setFromPoints([
                     new THREE.Vector3(entity.start.x, entity.start.y, 0),
                     new THREE.Vector3(entity.end.x, entity.end.y, 0)
                 ]);
-                shapes.push(new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0xffffff })));
+                const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0xffffff }));
+                group.add(line);
             }
-            // Add support for other entity types (ARC, CIRCLE, etc.)
+            // Add support for other entity types
         });
         
-        return shapes.length > 0 ? shapes : new THREE.BufferGeometry();
+        this.scene.add(group);
+        this.currentModel = group;
     }
 
-    visualizeToolpath(toolpath) {
-        // Clear previous toolpath visualization
-        this.scene.children = this.scene.children.filter(
-            obj => !obj.isToolpath
-        );
+    generateToolpath() {
+        if (!this.currentModel) {
+            alert('Please load a model first');
+            return;
+        }
         
-        // Visualize each operation
-        toolpath.operations.forEach(op => {
-            const points = op.points.map(p => new THREE.Vector3(p.x, p.y, p.z));
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            
-            const material = new THREE.LineBasicMaterial({
-                color: op.type === 'cut' ? 0xff0000 : 0x00ff00,
-                linewidth: 2
-            });
-            
-            const line = new THREE.Line(geometry, material);
-            line.isToolpath = true;
-            this.scene.add(line);
-        });
-    }
-
-    updateStats() {
-        if (!this.toolpath) return;
+        if (!this.selectedTool) {
+            alert('Please select a tool');
+            return;
+        }
         
-        // Calculate cycle time (simplified)
-        const totalDistance = this.toolpath.operations.reduce((sum, op) => {
-            if (op.points.length < 2) return sum;
-            let distance = 0;
-            for (let i = 1; i < op.points.length; i++) {
-                const a = op.points[i-1];
-                const b = op.points[i];
-                distance += Math.sqrt(
-                    Math.pow(b.x - a.x, 2) + 
-                    Math.pow(b.y - a.y, 2) + 
-                    Math.pow(b.z - a.z, 2)
-                );
+        this.showLoading(true, 'Generating toolpath...');
+        
+        setTimeout(() => {
+            try {
+                // Generate sample toolpath
+                const sampleGcode = [
+                    'G20 G17 G40 G49 G80 G90',
+                    `T${this.selectedTool.id} M6`,
+                    `G43 H${this.selectedTool.id}`,
+                    `S${this.selectedTool.rpm} M3`,
+                    'G54',
+                    'G0 X0 Y0 Z5.0',
+                    'G1 Z-1.0 F100',
+                    'G1 X10 Y10 F200',
+                    'G0 Z5.0',
+                    'M5',
+                    'G28 G91 Z0',
+                    'G90',
+                    'M30'
+                ].join('\n');
+                
+                document.getElementById('gcode-output').value = sampleGcode;
+                this.showLoading(false);
+            } catch (error) {
+                console.error('Error generating toolpath:', error);
+                this.showLoading(false);
             }
-            return sum + distance;
-        }, 0);
-        
-        const feedrate = this.toolpath.operations[0]?.feedrate || 1000;
-        const timeMinutes = totalDistance / feedrate;
-        const minutes = Math.floor(timeMinutes);
-        const seconds = Math.floor((timeMinutes % 1) * 60);
-        
-        document.getElementById('cycle-time').textContent = 
-            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
     }
 
     showLoading(show, message = '') {
         const overlay = document.getElementById('loading-overlay');
-        const progress = overlay.querySelector('.progress-bar');
         const status = document.getElementById('status-text');
         
         if (show) {
             overlay.style.display = 'flex';
             status.textContent = message;
-            progress.style.width = '0%';
-            
-            // Animate progress bar
-            let progressValue = 0;
-            const interval = setInterval(() => {
-                progressValue += 1;
-                progress.style.width = `${progressValue}%`;
-                
-                if (progressValue >= 100) {
-                    clearInterval(interval);
-                }
-            }, 50);
-            
-            this.loadingInterval = interval;
         } else {
-            clearInterval(this.loadingInterval);
             overlay.style.display = 'none';
         }
-    }
-
-    validateSelection() {
-        if (!this.currentModel) {
-            alert('Please load a model first');
-            return false;
-        }
-        
-        if (!this.selectedTool) {
-            alert('Please select a tool');
-            return false;
-        }
-        
-        if (!this.selectedMaterial) {
-            alert('Please select a material');
-            return false;
-        }
-        
-        return true;
     }
 
     animate() {
@@ -327,7 +278,7 @@ class WebCAMPro {
     }
 }
 
-// Initialize application when DOM is loaded
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     new WebCAMPro();
 });
