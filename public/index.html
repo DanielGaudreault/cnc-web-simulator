@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Web-Mastercam</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <div id="container">
+    <canvas id="canvas"></canvas>
+    <div id="controls">
+      <input type="file" id="dxf-upload" accept=".dxf">
+      <button id="generate-gcode">Generate G-code</button>
+    </div>
+    <pre id="gcode-output"></pre>
+  </div>
+  <script src="/js/main.js" type="module"></script>
+</body>
+</html>
