@@ -1,29 +1,86 @@
-# Generate with this Python code (save as make_sample_stl.py)
-import numpy as np
-from stl import mesh  # Requires numpy-stl (pip install numpy-stl)
-
-def create_cube():
-    # Define cube vertices
-    vertices = np.array([
-        [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],
-        [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]
-    ])
-    
-    # Define cube faces
-    faces = np.array([
-        [0,3,1], [1,3,2],  # Bottom
-        [0,4,7], [0,7,3],  # Front
-        [4,5,6], [4,6,7],  # Top
-        [5,1,2], [5,2,6],  # Right
-        [2,3,6], [3,7,6],  # Back
-        [0,1,5], [0,5,4]   # Left
-    ])
-    
-    cube = mesh.Mesh(np.zeros(faces.shape[0], dtype=mesh.Mesh.dtype)
-    for i, f in enumerate(faces):
-        for j in range(3):
-            cube.vectors[i][j] = vertices[f[j]]
-    return cube
-
-cube = create_cube()
-cube.save('sample.stl')  # Binary STL
+solid cube
+  facet normal 0 0 -1
+    outer loop
+      vertex 0 0 0
+      vertex 1 0 0
+      vertex 1 1 0
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 0 0 0
+      vertex 1 1 0
+      vertex 0 1 0
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 0 1
+      vertex 1 0 1
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 0 0 0
+      vertex 1 0 1
+      vertex 1 0 0
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 1 0
+      vertex 0 1 1
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 1 1
+      vertex 0 0 1
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex 0 0 1
+      vertex 1 0 1
+      vertex 1 1 1
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex 0 0 1
+      vertex 1 1 1
+      vertex 0 1 1
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 0 1 0
+      vertex 1 1 0
+      vertex 1 1 1
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 0 1 0
+      vertex 1 1 1
+      vertex 0 1 1
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 1 0 0
+      vertex 1 0 1
+      vertex 1 1 1
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 1 0 0
+      vertex 1 1 1
+      vertex 1 1 0
+    endloop
+  endfacet
+endsolid cube
