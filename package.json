@@ -1,0 +1,12 @@
+{
+  "name": "web-mastercam",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "three": "^0.132.2",
+    "vite": "^3.0.0"
+  }
+}
