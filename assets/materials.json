@@ -4,20 +4,39 @@
         "name": "Aluminum 6061",
         "type": "metal",
         "cuttingSpeed": 250,
-        "feedPerTooth": 0.003
+        "feedPerTooth": 0.003,
+        "description": "General purpose aluminum alloy"
     },
     {
         "id": "steel-mild",
         "name": "Mild Steel",
         "type": "metal",
         "cuttingSpeed": 100,
-        "feedPerTooth": 0.002
+        "feedPerTooth": 0.002,
+        "description": "Low carbon steel"
     },
     {
         "id": "abs-plastic",
         "name": "ABS Plastic",
         "type": "plastic",
         "cuttingSpeed": 300,
-        "feedPerTooth": 0.005
+        "feedPerTooth": 0.005,
+        "description": "Common thermoplastic"
+    },
+    {
+        "id": "stainless-304",
+        "name": "Stainless Steel 304",
+        "type": "metal",
+        "cuttingSpeed": 80,
+        "feedPerTooth": 0.0015,
+        "description": "Austenitic stainless steel"
+    },
+    {
+        "id": "brass",
+        "name": "Brass",
+        "type": "metal",
+        "cuttingSpeed": 200,
+        "feedPerTooth": 0.004,
+        "description": "Free machining brass"
     }
 ]
