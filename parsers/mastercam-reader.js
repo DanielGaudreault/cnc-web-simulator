@@ -1,123 +1,158 @@
 class MastercamParser {
     constructor() {
-        this.occt = null; // OpenCASCADE instance
-        this.initOCCT().catch(console.error);
+        this.geometryTypes = {
+            0x01: 'LINE',
+            0x02: 'ARC',
+            0x03: 'SPLINE',
+            0x04: 'POINT'
+        };
     }
 
-    async initOCCT() {
-        // Load OpenCASCADE WASM module
-        this.occt = await OCCTImport();
-    }
-
-    async parse(file) {
-        const arrayBuffer = await file.arrayBuffer();
-        const extension = file.name.split('.').pop().toLowerCase();
-
-        switch(extension) {
-            case 'mcx':
-            case 'mcam':
-                return this.parseNativeMastercam(arrayBuffer);
-            case 'step':
-            case 'stp':
-                return this.parseStep(arrayBuffer);
-            case 'iges':
-            case 'igs':
-                return this.parseIges(arrayBuffer);
-            default:
-                throw new Error(`Unsupported file type: ${extension}`);
-        }
-    }
-
-    async parseNativeMastercam(buffer) {
-        // Basic geometry extraction from Mastercam files
-        // Note: This is simplified - real implementation would need file format specs
+    async parse(arrayBuffer) {
+        const view = new DataView(arrayBuffer);
         
-        const dataView = new DataView(buffer);
-        const magicNumber = dataView.getUint32(0, true);
+        // Validate header
+        const signature = String.fromCharCode(
+            view.getUint8(0),
+            view.getUint8(1),
+            view.getUint8(2),
+            view.getUint8(3)
+        );
         
-        if (magicNumber !== 0x4D434158) { // 'MCAX' in hex
-            throw new Error('Invalid Mastercam file');
+        if (signature !== 'MCAX') {
+            throw new Error('Invalid Mastercam file signature');
         }
-
+        
+        const version = view.getUint16(4, true);
+        const units = view.getUint8(6) === 0 ? 'inches' : 'mm';
+        const headerSize = 32;
+        
         const entities = [];
-        let offset = 4; // Skip header
+        let offset = headerSize;
         
-        while(offset < buffer.byteLength) {
-            const entityType = dataView.getUint8(offset);
+        while (offset < arrayBuffer.byteLength) {
+            const entityType = view.getUint8(offset);
             offset += 1;
             
-            switch(entityType) {
-                case 0x01: // LINE
-                    entities.push(this.parseLine(dataView, offset));
-                    offset += 24; // 6 floats (x1,y1,z1,x2,y2,z2)
-                    break;
-                case 0x02: // ARC
-                    entities.push(this.parseArc(dataView, offset)));
-                    offset += 40;
-                    break;
-                // Add more entity types as needed
-                default:
-                    offset = buffer.byteLength; // Skip unknown entities
+            if (!this.geometryTypes[entityType]) {
+                offset = this.skipUnknownEntity(view, offset);
+                continue;
             }
+            
+            const entity = {
+                type: this.geometryTypes[entityType],
+                data: this.parseEntity(view, offset, entityType)
+            };
+            
+            entities.push(entity);
+            offset += entity.data.byteLength;
         }
         
         return {
-            format: 'mastercam',
-            version: dataView.getUint16(4, true),
+            format: 'Mastercam',
+            version: version,
+            units: units,
             entities: entities
         };
     }
 
-    parseLine(dataView, offset) {
-        return {
-            type: 'line',
-            start: {
-                x: dataView.getFloat32(offset, true),
-                y: dataView.getFloat32(offset+4, true),
-                z: dataView.getFloat32(offset+8, true)
-            },
-            end: {
-                x: dataView.getFloat32(offset+12, true),
-                y: dataView.getFloat32(offset+16, true),
-                z: dataView.getFloat32(offset+20, true)
+    parseEntity(view, offset, type) {
+        switch(type) {
+            case 0x01: // LINE
+                return {
+                    start: {
+                        x: view.getFloat32(offset, true),
+                        y: view.getFloat32(offset+4, true),
+                        z: view.getFloat32(offset+8, true)
+                    },
+                    end: {
+                        x: view.getFloat32(offset+12, true),
+                        y: view.getFloat32(offset+16, true),
+                        z: view.getFloat32(offset+20, true)
+                    },
+                    byteLength: 24
+                };
+                
+            case 0x02: // ARC
+                return {
+                    center: {
+                        x: view.getFloat32(offset, true),
+                        y: view.getFloat32(offset+4, true),
+                        z: view.getFloat32(offset+8, true)
+                    },
+                    radius: view.getFloat32(offset+12, true),
+                    startAngle: view.getFloat32(offset+16, true),
+                    endAngle: view.getFloat32(offset+20, true),
+                    normal: {
+                        x: view.getFloat32(offset+24, true),
+                        y: view.getFloat32(offset+28, true),
+                        z: view.getFloat32(offset+32, true)
+                    },
+                    byteLength: 36
+                };
+                
+            default:
+                return { byteLength: 0 };
+        }
+    }
+
+    skipUnknownEntity(view, offset) {
+        // Skip 4 bytes (default for unknown entities)
+        return offset + 4;
+    }
+
+    convertToThreeJS(parsedData) {
+        const group = new THREE.Group();
+        
+        parsedData.entities.forEach(entity => {
+            switch(entity.type) {
+                case 'LINE':
+                    const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+                        new THREE.Vector3(
+                            entity.data.start.x,
+                            entity.data.start.y,
+                            entity.data.start.z
+                        ),
+                        new THREE.Vector3(
+                            entity.data.end.x,
+                            entity.data.end.y,
+                            entity.data.end.z
+                        )
+                    ]);
+                    const lineMaterial = new THREE.LineBasicMaterial({ 
+                        color: 0x00ff00,
+                        linewidth: 2
+                    });
+                    group.add(new THREE.Line(lineGeometry, lineMaterial));
+                    break;
+                    
+                case 'ARC':
+                    const arcPoints = this.generateArcPoints(entity.data);
+                    const arcGeometry = new THREE.BufferGeometry().setFromPoints(arcPoints);
+                    group.add(new THREE.Line(
+                        arcGeometry,
+                        new THREE.LineBasicMaterial({ color: 0xff0000 })
+                    ));
+                    break;
             }
-        };
+        });
+        
+        return group;
     }
 
-    parseArc(dataView, offset) {
-        // Similar implementation for arcs
-    }
-
-    async parseStep(buffer) {
-        // Use OpenCASCADE for robust STEP processing
-        const stepData = new TextDecoder().decode(buffer);
-        return this.occt.parseSTEP(stepData);
-    }
-
-    async parseIges(buffer) {
-        // IGES parsing implementation
+    generateArcPoints(arcData, segments = 32) {
+        const points = [];
+        const angleRange = arcData.endAngle - arcData.startAngle;
+        
+        for (let i = 0; i <= segments; i++) {
+            const angle = arcData.startAngle + (angleRange * i / segments);
+            points.push(new THREE.Vector3(
+                arcData.center.x + arcData.radius * Math.cos(angle),
+                arcData.center.y + arcData.radius * Math.sin(angle),
+                arcData.center.z
+            ));
+        }
+        
+        return points;
     }
 }
-
-// Helper function to convert to Three.js geometry
-MastercamParser.prototype.convertToThreeJS = function(mastercamData) {
-    const group = new THREE.Group();
-    
-    mastercamData.entities.forEach(entity => {
-        switch(entity.type) {
-            case 'line':
-                const lineGeometry = new THREE.BufferGeometry().setFromPoints([
-                    new THREE.Vector3(entity.start.x, entity.start.y, entity.start.z),
-                    new THREE.Vector3(entity.end.x, entity.end.y, entity.end.z)
-                ]);
-                const line = new THREE.Line(lineGeometry, new THREE.LineBasicMaterial({ color: 0xffffff }));
-                group.add(line);
-                break;
-            case 'arc':
-                // Convert arc to Three.js geometry
-                break;
-        }
-    });
-    
-    return group;
-};
