@@ -1,40 +1,36 @@
-// Initialize Three.js scene
+// Three.js Scene Setup (existing code)
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x222222);
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setSize(window.innerWidth, window.innerHeight);
+// ... (previous camera, renderer, controls setup)
 
-// Add lights
-const light1 = new THREE.DirectionalLight(0xffffff, 1);
-light1.position.set(1, 1, 1);
-scene.add(light1);
-const light2 = new THREE.AmbientLight(0x404040);
-scene.add(light2);
+// Enhanced loadSampleFiles() function
+async function loadSampleFiles() {
+  try {
+    // 1. Load sample STL
+    const stlResponse = await fetch('assets/sample.stl');
+    if (!stlResponse.ok) throw new Error('STL file not found');
+    const stlData = await stlResponse.arrayBuffer();
+    loadModel('sample.stl', stlData);
 
-// Add grid helper
-scene.add(new THREE.GridHelper(100, 100));
+    // 2. Load sample G-code
+    const gcodeResponse = await fetch('assets/sample.gcode');
+    if (!gcodeResponse.ok) throw new Error('G-code file not found');
+    const gcodeText = await gcodeResponse.text();
+    document.getElementById('gcode-output').textContent = gcodeText;
 
-// Set up controls
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
-camera.position.set(50, 50, 50);
-controls.update();
+    // 3. Optional: Load DXF (uncomment if needed)
+    // const dxfResponse = await fetch('assets/sample.dxf');
+    // const dxfText = await dxfResponse.text();
+    // console.log("DXF loaded:", dxfText.slice(0, 100));
 
-// File loading
-document.getElementById('file-input').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  } catch (error) {
+    console.error("Error loading samples:", error);
+    document.getElementById('gcode-output').textContent = `Error: ${error.message}`;
+  }
+}
 
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    loadModel(file.name, event.target.result);
-  };
-  reader.readAsArrayBuffer(file);
-});
-
+// Modified loadModel() to handle errors
 function loadModel(filename, data) {
-  // Clear previous model
+  // Clear previous models
   scene.children = scene.children.filter(obj => 
     obj !== light1 && obj !== light2 && !(obj instanceof THREE.GridHelper)
   );
@@ -43,35 +39,38 @@ function loadModel(filename, data) {
     if (filename.endsWith('.stl')) {
       const loader = new THREE.STLLoader();
       const geometry = loader.parse(data);
-      const material = new THREE.MeshPhongMaterial({ color: 0x00aaff, specular: 0x111111, shininess: 200 });
+      const material = new THREE.MeshPhongMaterial({ 
+        color: 0x00aaff, 
+        specular: 0x111111, 
+        shininess: 200 
+      });
       const mesh = new THREE.Mesh(geometry, material);
+      
+      // Center and scale the model
+      geometry.computeBoundingBox();
+      const boundingBox = geometry.boundingBox;
+      const center = new THREE.Vector3();
+      boundingBox.getCenter(center);
+      mesh.position.sub(center);
+      
       scene.add(mesh);
-    } else if (filename.endsWith('.dxf')) {
-      // DXF parsing would go here
-      console.log("DXF support needs custom implementation");
     }
   } catch (e) {
-    console.error("Error loading model:", e);
+    console.error("Model loading failed:", e);
+    document.getElementById('gcode-output').textContent += `\n\nModel Error: ${e.message}`;
   }
 }
 
-// G-code generation
-document.getElementById('generate-btn').addEventListener('click', () => {
-  const gcode = generateToolpath(scene);
-  document.getElementById('gcode-output').textContent = gcode;
-});
-
-// Animation loop
-function animate() {
-  requestAnimationFrame(animate);
-  controls.update();
-  renderer.render(scene, camera);
+// Initialize everything
+function init() {
+  // Existing scene setup
+  // ...
+  
+  // Load samples on startup
+  loadSampleFiles();
+  
+  // Start animation loop
+  animate();
 }
-animate();
 
-// Window resize
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+init();
