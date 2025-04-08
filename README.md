@@ -1,4 +1,4 @@
-# web-mastercam
+# CNC web simulator
 
 # CAD/CAM System (Local Only)
 
