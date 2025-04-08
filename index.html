@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mastercam Web</title>
+    <title>Mastercam Web Clone</title>
     <link rel="stylesheet" href="style.css">
     <script src="lib/three.js"></script>
     <script src="lib/jszip.js"></script>
@@ -43,12 +43,22 @@
                 
                 <!-- Create Panel -->
                 <div class="ribbon-panel" data-panel="create">
-                    <!-- Contains CAD creation tools -->
+                    <div class="ribbon-group">
+                        <h3>Primitives</h3>
+                        <button id="create-box">Box</button>
+                        <button id="create-cylinder">Cylinder</button>
+                        <button id="create-sphere">Sphere</button>
+                    </div>
                 </div>
                 
                 <!-- Toolpaths Panel -->
                 <div class="ribbon-panel" data-panel="toolpaths">
-                    <!-- Contains CAM toolpath tools -->
+                    <div class="ribbon-group">
+                        <h3>Operations</h3>
+                        <button id="toolpath-contour">Contour</button>
+                        <button id="toolpath-pocket">Pocket</button>
+                        <button id="toolpath-drill">Drill</button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -105,16 +115,25 @@
     <script src="src/core/file-io.js"></script>
     <script src="src/core/post-processor.js"></script>
     <script src="src/core/tool-library.js"></script>
+    <script src="src/core/command-manager.js"></script>
+    <script src="src/core/selection-manager.js"></script>
+    <script src="src/core/transformation-manager.js"></script>
+    <script src="src/core/undo-redo.js"></script>
     
     <script src="src/ui/ribbon-ui.js"></script>
     <script src="src/ui/cad-viewer.js"></script>
     <script src="src/ui/tree-view.js"></script>
     <script src="src/ui/property-editor.js"></script>
     <script src="src/ui/toolpath-visualizer.js"></script>
+    <script src="src/ui/status-bar.js"></script>
+    
+    <script src="src/utils/file-utils.js"></script>
+    <script src="src/utils/math-utils.js"></script>
+    <script src="src/utils/worker-manager.js"></script>
     
     <script src="src/formats/mcam-parser.js"></script>
     <script src="src/formats/step-parser.js"></script>
     
-    <script src="src/app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
