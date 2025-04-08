@@ -1,6 +1,7 @@
 class StatusBar {
-    constructor(containerId) {
+    constructor(containerId, cadEngine) {
         this.container = document.getElementById(containerId);
+        this.cadEngine = cadEngine;
         this.status = {
             coordinates: { x: 0, y: 0, z: 0 },
             units: "mm",
@@ -9,6 +10,7 @@ class StatusBar {
         };
 
         this._setupUI();
+        this._setupEventListeners();
     }
 
     _setupUI() {
@@ -22,6 +24,24 @@ class StatusBar {
         this.container.appendChild(this.unitsElement);
         this.container.appendChild(this.selectionElement);
         this.container.appendChild(this.messageElement);
+    }
+
+    _setupEventListeners() {
+        document.addEventListener("mousemove", (event) => {
+            this.updateCoordinates(event.clientX, event.clientY, 0); // Mock Z position
+        });
+
+        this.cadEngine.onSelectionChange((selectedObjects) => {
+            this.updateSelectionCount(selectedObjects.length);
+        });
+
+        this.cadEngine.onTransformation((object) => {
+            this.showMessage(`Transformed ${object.name}`, "success");
+        });
+
+        this.cadEngine.onFileLoaded((fileName) => {
+            this.showMessage(`Loaded file: ${fileName}`, "info");
+        });
     }
 
     _createStatusElement(className, defaultText) {
@@ -41,11 +61,6 @@ class StatusBar {
         this.selectionElement.textContent = `Selected: ${count}`;
     }
 
-    updateUnits(units) {
-        this.status.units = units;
-        this.unitsElement.textContent = `Units: ${units}`;
-    }
-
     showMessage(text, type = "info") {
         this.status.message = { text, type };
         this.messageElement.textContent = text;
@@ -54,4 +69,3 @@ class StatusBar {
 }
 
 export default StatusBar;
-
