@@ -3,59 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mastercam Web Clone</title>
+    <title>Mastercam Web</title>
     <link rel="stylesheet" href="style.css">
+    <script src="lib/three.js"></script>
+    <script src="lib/jszip.js"></script>
+    <script src="lib/dat.gui.js"></script>
 </head>
 <body>
     <div class="app-container">
-        <header class="app-header">
-            <h1>Mastercam Web</h1>
-            <div class="toolbar">
-                <input type="file" id="file-input" accept=".mcam,.MCAM">
-                <button id="generate-nc">Generate NC</button>
-                <select id="post-processor">
-                    <option value="generic">Generic</option>
-                    <option value="fanuc">Fanuc</option>
-                    <option value="haas">Haas</option>
-                </select>
+        <!-- Ribbon UI -->
+        <header class="ribbon-ui">
+            <div class="ribbon-tabs">
+                <button class="ribbon-tab active" data-tab="home">Home</button>
+                <button class="ribbon-tab" data-tab="create">Create</button>
+                <button class="ribbon-tab" data-tab="toolpaths">Toolpaths</button>
+                <button class="ribbon-tab" data-tab="simulate">Simulate</button>
+            </div>
+            
+            <div class="ribbon-panels">
+                <!-- Home Panel -->
+                <div class="ribbon-panel active" data-panel="home">
+                    <div class="ribbon-group">
+                        <h3>File</h3>
+                        <button id="new-file">New</button>
+                        <input type="file" id="open-file" accept=".mcam,.MCAM,.step,.STEP">
+                        <button id="save-file">Save</button>
+                        <button id="export-stl">Export STL</button>
+                    </div>
+                    
+                    <div class="ribbon-group">
+                        <h3>View</h3>
+                        <button id="view-top">Top</button>
+                        <button id="view-front">Front</button>
+                        <button id="view-side">Side</button>
+                        <button id="view-iso">Isometric</button>
+                        <button id="zoom-fit">Fit View</button>
+                    </div>
+                </div>
+                
+                <!-- Create Panel -->
+                <div class="ribbon-panel" data-panel="create">
+                    <!-- Contains CAD creation tools -->
+                </div>
+                
+                <!-- Toolpaths Panel -->
+                <div class="ribbon-panel" data-panel="toolpaths">
+                    <!-- Contains CAM toolpath tools -->
+                </div>
             </div>
         </header>
         
+        <!-- Main Content Area -->
         <div class="main-content">
-            <aside class="sidebar">
-                <div class="panel">
-                    <h3>File Structure</h3>
-                    <div id="file-structure"></div>
-                </div>
-                <div class="panel">
-                    <h3>Toolpaths</h3>
-                    <div id="toolpath-list"></div>
-                </div>
-                <div class="panel">
-                    <h3>Properties</h3>
-                    <div id="properties"></div>
-                </div>
+            <!-- Left Sidebar -->
+            <aside class="sidebar left">
+                <div class="tree-view" id="geometry-tree"></div>
+                <div class="toolpath-list" id="toolpath-list"></div>
             </aside>
             
-            <main class="viewer-container">
-                <div id="model-viewer"></div>
-                <div class="viewer-controls">
-                    <button id="zoom-fit">Fit View</button>
-                    <button id="view-top">Top</button>
-                    <button id="view-front">Front</button>
-                    <button id="view-side">Side</button>
-                    <button id="view-iso">Isometric</button>
+            <!-- Center Viewport -->
+            <main class="viewport">
+                <div id="cad-viewer"></div>
+                <div id="toolpath-visualizer"></div>
+                <div class="viewport-controls">
+                    <select id="display-mode">
+                        <option value="shaded">Shaded</option>
+                        <option value="wireframe">Wireframe</option>
+                        <option value="hidden-line">Hidden Line</option>
+                    </select>
                 </div>
             </main>
+            
+            <!-- Right Sidebar -->
+            <aside class="sidebar right">
+                <div class="property-editor" id="property-editor"></div>
+                <div class="post-processor">
+                    <h3>Post Processor</h3>
+                    <select id="post-processor">
+                        <option value="generic">Generic</option>
+                        <option value="fanuc">Fanuc</option>
+                        <option value="haas">Haas</option>
+                        <option value="heidenhain">Heidenhain</option>
+                    </select>
+                    <button id="generate-gcode">Generate G-Code</button>
+                </div>
+            </aside>
         </div>
+        
+        <!-- Status Bar -->
+        <footer class="status-bar">
+            <div class="coordinates">X: 0.000 Y: 0.000 Z: 0.000</div>
+            <div class="units">Units: mm</div>
+            <div class="selection-count">Selected: 0</div>
+        </footer>
     </div>
 
-    <script src="lib/three.js"></script>
-    <script src="lib/jszip.js"></script>
-    <script src="src/core/geometry-engine.js"></script>
-    <script src="src/core/file-parser.js"></script>
-    <script src="src/core/nc-generator.js"></script>
-    <script src="src/core/toolpath-engine.js"></script>
+    <!-- Load all JavaScript files -->
+    <script src="src/core/geometry-kernel.js"></script>
+    <script src="src/core/cad-engine.js"></script>
+    <script src="src/core/cam-engine.js"></script>
+    <script src="src/core/file-io.js"></script>
+    <script src="src/core/post-processor.js"></script>
+    <script src="src/core/tool-library.js"></script>
+    
+    <script src="src/ui/ribbon-ui.js"></script>
+    <script src="src/ui/cad-viewer.js"></script>
+    <script src="src/ui/tree-view.js"></script>
+    <script src="src/ui/property-editor.js"></script>
+    <script src="src/ui/toolpath-visualizer.js"></script>
+    
+    <script src="src/formats/mcam-parser.js"></script>
+    <script src="src/formats/step-parser.js"></script>
+    
     <script src="src/app.js"></script>
 </body>
 </html>
