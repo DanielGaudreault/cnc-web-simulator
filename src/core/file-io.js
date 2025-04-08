@@ -1,10 +1,10 @@
 class MastercamFileIO {
     constructor() {
         this.formats = {
-            '.mcam': this._handleMCAMFile,
-            '.step': this._handleSTEPFile,
-            '.iges': this._handleIGESFile,
-            '.stl': this._handleSTLFile
+            '.mcam': this._handleMCAMFile.bind(this),
+            '.step': this._handleSTEPFile.bind(this),
+            '.iges': this._handleIGESFile.bind(this),
+            '.stl': this._handleSTLFile.bind(this)
         };
     }
 
@@ -33,62 +33,8 @@ class MastercamFileIO {
     }
 
     async _handleMCAMFile(file) {
-        const zip = new JSZip();
-        const content = await zip.loadAsync(file);
+        const arrayBuffer = await FileUtils.readFileAsArrayBuffer(file);
+        const zip = await JSZip.loadAsync(arrayBuffer);
         
-        const manifest = JSON.parse(await content.file('manifest.json').async('text'));
-        const geometry = await this._parseMCAMGeometry(content.file('geometry.dat'));
-        const toolpaths = await this._parseMCAMToolpaths(content.file('toolpaths.xml'));
-        
-        return {
-            manifest,
-            geometry,
-            toolpaths,
-            metadata: {
-                version: manifest.version,
-                units: manifest.units,
-                created: manifest.created
-            }
-        };
-    }
-
-    async _exportMCAM(objects) {
-        const zip = new JSZip();
-        
-        // Add manifest
-        const manifest = {
-            version: "1.0",
-            created: new Date().toISOString(),
-            units: "mm",
-            objectCount: objects.length
-        };
-        zip.file("manifest.json", JSON.stringify(manifest));
-        
-        // Add geometry
-        const geometryData = this._serializeGeometry(objects);
-        zip.file("geometry.dat", geometryData);
-        
-        // Generate ZIP file
-        return zip.generateAsync({ type: 'blob' });
-    }
-
-    _serializeGeometry(objects) {
-        // This would be a complex implementation matching Mastercam's format
-        // Simplified for demonstration
-        const buffer = new ArrayBuffer(1024);
-        const view = new DataView(buffer);
-        
-        // Write header
-        view.setUint32(0, 0x4D43414D); // 'MCAM'
-        view.setUint32(4, objects.length);
-        
-        // Write objects
-        let offset = 8;
-        objects.forEach(obj => {
-            // Serialize each object to binary format
-            // Actual implementation would be much more complex
-        });
-        
-        return buffer.slice(0, offset);
-    }
-}
+        const manifest = JSON.parse(await zip.file('manifest.json').async('text'));
+        const geometry = await this._parseMCAMGeometry(
