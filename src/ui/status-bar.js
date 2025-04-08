@@ -28,7 +28,7 @@ class StatusBar {
 
     _setupEventListeners() {
         document.addEventListener("mousemove", (event) => {
-            this.updateCoordinates(event.clientX, event.clientY, 0); // Mock Z position
+            this.updateCoordinates(event.clientX, event.clientY, 0);
         });
 
         this.cadEngine.onSelectionChange((selectedObjects) => {
@@ -36,11 +36,15 @@ class StatusBar {
         });
 
         this.cadEngine.onTransformation((object) => {
-            this.showMessage(`Transformed ${object.name}`, "success");
+            this.showNotification(`Transformed ${object.name}`, "success");
         });
 
         this.cadEngine.onFileLoaded((fileName) => {
-            this.showMessage(`Loaded file: ${fileName}`, "info");
+            this.showNotification(`Loaded file: ${fileName}`, "info");
+        });
+
+        this.cadEngine.onError((errorMessage) => {
+            this.showNotification(`Error: ${errorMessage}`, "error");
         });
     }
 
@@ -61,10 +65,21 @@ class StatusBar {
         this.selectionElement.textContent = `Selected: ${count}`;
     }
 
-    showMessage(text, type = "info") {
-        this.status.message = { text, type };
-        this.messageElement.textContent = text;
+    showNotification(message, type = "info") {
+        this.status.message = { text: message, type };
+        this.messageElement.textContent = message;
         this.messageElement.className = `message ${type}`;
+
+        // Floating alert UI
+        const alert = document.createElement("div");
+        alert.classList.add("status-alert", type);
+        alert.textContent = message;
+        document.body.appendChild(alert);
+
+        setTimeout(() => {
+            alert.classList.add("fade-out");
+            setTimeout(() => alert.remove(), 500);
+        }, 4000);
     }
 }
 
