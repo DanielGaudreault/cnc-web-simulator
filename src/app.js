@@ -1,94 +1,137 @@
 class MastercamWebApp {
     constructor() {
-        this.parser = new MastercamParser();
-        this.ncGenerator = new NCGenerator();
-        this.geometryEngine = new GeometryEngine();
+        // Initialize core systems
+        this.geometryKernel = new GeometryKernel();
+        this.cadEngine = new CADEngine();
+        this.camEngine = new CAMEngine(this.cadEngine);
+        this.fileIO = new MastercamFileIO();
+        this.toolLibrary = new ToolLibrary();
+        this.postProcessor = new PostProcessor();
         
+        // Initialize UI components
+        this.ribbonUI = new RibbonUI();
+        this.cadViewer = new CADViewer();
+        this.treeView = new TreeView();
+        this.propertyEditor = new PropertyEditor();
+        this.toolpathVisualizer = new ToolpathVisualizer();
+        
+        // Setup default tools
+        this.toolLibrary.createDefaultLibrary();
+        
+        // Current state
         this.currentFile = null;
-        this.scene = new THREE.Scene();
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
-        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.undoStack = [];
+        this.redoStack = [];
         
-        this.initUI();
-        this.initEventListeners();
-    }
-
-    initUI() {
-        // Setup Three.js renderer
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('model-viewer').appendChild(this.renderer.domElement);
+        // Initialize event listeners
+        this._setupEventListeners();
+        this._setupKeyboardShortcuts();
         
-        // Basic lighting
-        const ambientLight = new THREE.AmbientLight(0x404040);
-        this.scene.add(ambientLight);
-        
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        directionalLight.position.set(1, 1, 1);
-        this.scene.add(directionalLight);
-        
-        // Grid helper
-        const gridHelper = new THREE.GridHelper(100, 100);
-        this.scene.add(gridHelper);
-        
-        // Camera position
-        this.camera.position.z = 50;
+        // Start render loop
+        this._render();
     }
 
     async openFile(file) {
         try {
-            const arrayBuffer = await file.arrayBuffer();
-            this.currentFile = await this.parser.parseMCAMFile(arrayBuffer);
+            const fileData = await this.fileIO.importFile(file);
+            this.currentFile = fileData;
             
-            // Render geometry
-            const threeGeometry = this.geometryEngine.createFromMCAMGeometry(this.currentFile.geometry);
-            const material = new THREE.MeshStandardMaterial({ color: 0x00aaff, side: THREE.DoubleSide });
-            const mesh = new THREE.Mesh(threeGeometry, material);
-            
-            this.scene.add(mesh);
+            // Process geometry
+            const threeGeometry = this.geometryKernel.convertToThreeJS(fileData.geometry);
+            this.cadViewer.addGeometry(threeGeometry);
             
             // Update UI
-            this.updateFileStructure(this.currentFile);
-            this.updateToolpathList(this.currentFile.toolpaths);
+            this.treeView.update(fileData);
+            this.propertyEditor.update(fileData.metadata);
+            
+            // Process toolpaths if any
+            if (fileData.toolpaths && fileData.toolpaths.length > 0) {
+                this.toolpathVisualizer.showToolpaths(fileData.toolpaths);
+            }
             
         } catch (error) {
             console.error('Error opening file:', error);
-            alert('Failed to open file: ' + error.message);
+            this._showError(`Failed to open file: ${error.message}`);
         }
     }
 
-    generateNC() {
+    async saveFile(filename = 'untitled.mcam') {
         if (!this.currentFile) {
-            alert('No file loaded');
+            this._showError('No file to save');
             return;
         }
         
-        const gcode = this.ncGenerator.generateGCode(
-            this.currentFile.toolpaths,
-            this.currentFile.machineSetup,
-            'generic'
+        try {
+            const exportData = {
+                geometry: this.cadEngine.getCurrentGeometry(),
+                toolpaths: this.camEngine.toolpaths,
+                metadata: this.currentFile.metadata
+            };
+            
+            const blob = await this.fileIO.exportFile(exportData, 'mcam');
+            this._downloadFile(blob, filename);
+            
+        } catch (error) {
+            console.error('Error saving file:', error);
+            this._showError(`Failed to save file: ${error.message}`);
+        }
+    }
+
+    generateGCode(controllerType = 'generic') {
+        if (!this.camEngine.toolpaths || this.camEngine.toolpaths.length === 0) {
+            this._showError('No toolpaths to generate');
+            return;
+        }
+        
+        const gcode = this.postProcessor.generate(
+            this.camEngine.toolpaths,
+            this.camEngine.machineSetup,
+            controllerType
         );
         
-        // Create download link
-        const blob = new Blob([gcode], { type: 'text/plain' });
+        this._downloadFile(
+            new Blob([gcode], { type: 'text/plain' }),
+            `program_${new Date().toISOString().slice(0, 10)}.nc`
+        );
+    }
+
+    _render() {
+        requestAnimationFrame(() => this._render());
+        this.cadViewer.render();
+        
+        if (this.toolpathVisualizer.isVisible) {
+            this.toolpathVisualizer.render();
+        }
+    }
+
+    _setupEventListeners() {
+        // File operations
+        document.getElementById('open-file').addEventListener('change', (e) => {
+            if (e.target.files[0]) this.openFile(e.target.files[0]);
+        });
+        
+        document.getElementById('save-file').addEventListener('click', () => this.saveFile());
+        
+        // Toolpath generation
+        document.getElementById('generate-gcode').addEventListener('click', () => {
+            const controllerType = document.getElementById('post-processor').value;
+            this.generateGCode(controllerType);
+        });
+    }
+
+    _downloadFile(blob, filename) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'program.nc';
+        a.download = filename;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 }
 
-// Initialize application
-const app = new MastercamWebApp();
-
-// File input handler
-document.getElementById('file-input').addEventListener('change', (e) => {
-    if (e.target.files.length > 0) {
-        app.openFile(e.target.files[0]);
-    }
-});
-
-// Generate NC button
-document.getElementById('generate-nc').addEventListener('click', () => {
-    app.generateNC();
+// Initialize application when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.app = new MastercamWebApp();
 });
