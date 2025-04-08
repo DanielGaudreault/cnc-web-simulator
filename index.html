@@ -3,139 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebMastercam Pro</title>
-    <link rel="stylesheet" href="css/styles.css">
-    <script src="libs/three.min.js"></script>
-    <script src="libs/OrbitControls.js"></script>
-    <script src="libs/STLLoader.js"></script>
-    <script src="libs/jszip.min.js"></script>
-    <script src="libs/FileSaver.min.js"></script>
-    <script src="libs/dat.gui.min.js"></script>
-    <script src="js/geometry-utils.js"></script>
-    <script src="js/mastercam-reader.js"></script>
-    <script src="js/gcode-generator.js"></script>
-    <script src="js/cam-core.js"></script>
-    <script src="js/app.js" defer></script>
+    <title>Mastercam Web Clone</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="app-container">
+    <div class="app-container">
         <header class="app-header">
-            <div class="logo-container">
-                <div class="logo">WebMastercam</div>
-                <div class="version">PRO 1.0</div>
-            </div>
-            <nav class="main-menu">
-                <ul>
-                    <li class="menu-item" id="menu-file">
-                        <span>File</span>
-                        <div class="submenu" id="submenu-file">
-                            <div class="submenu-item" id="file-new">New</div>
-                            <div class="submenu-item" id="file-open">Open...</div>
-                            <div class="submenu-item" id="file-save">Save</div>
-                            <div class="submenu-item" id="file-export">Export G-code</div>
-                            <div class="divider"></div>
-                            <div class="submenu-item" id="file-exit">Exit</div>
-                        </div>
-                    </li>
-                    <li class="menu-item" id="menu-edit">Edit</li>
-                    <li class="menu-item" id="menu-view">View</li>
-                    <li class="menu-item" id="menu-toolpaths">Toolpaths</li>
-                    <li class="menu-item" id="menu-simulation">Simulation</li>
-                    <li class="menu-item" id="menu-help">Help</li>
-                </ul>
-            </nav>
+            <h1>Mastercam Web</h1>
             <div class="toolbar">
-                <button class="toolbar-btn" id="btn-new" title="New File">
-                    <i class="icon-new"></i>
-                </button>
-                <button class="toolbar-btn" id="btn-open" title="Open File">
-                    <i class="icon-open"></i>
-                </button>
-                <button class="toolbar-btn" id="btn-save" title="Save File">
-                    <i class="icon-save"></i>
-                </button>
-                <div class="toolbar-divider"></div>
-                <button class="toolbar-btn" id="btn-zoom-fit" title="Zoom to Fit">
-                    <i class="icon-zoom-fit"></i>
-                </button>
-                <div class="toolbar-divider"></div>
-                <button class="toolbar-btn" id="btn-simulate" title="Simulate Toolpath">
-                    <i class="icon-simulate"></i>
-                </button>
-                <button class="toolbar-btn" id="btn-post" title="Post Process">
-                    <i class="icon-post"></i>
-                </button>
+                <input type="file" id="file-input" accept=".mcam,.MCAM">
+                <button id="generate-nc">Generate NC</button>
+                <select id="post-processor">
+                    <option value="generic">Generic</option>
+                    <option value="fanuc">Fanuc</option>
+                    <option value="haas">Haas</option>
+                </select>
             </div>
-            <input type="file" id="file-input" accept=".mcam,.mcx,.emcam,.opst" style="display:none;">
         </header>
         
-        <div class="app-content">
-            <aside class="left-sidebar">
-                <div class="sidebar-tabs">
-                    <div class="tab active" data-tab="toolpaths">Toolpaths</div>
-                    <div class="tab" data-tab="operations">Operations</div>
-                    <div class="tab" data-tab="geometry">Geometry</div>
+        <div class="main-content">
+            <aside class="sidebar">
+                <div class="panel">
+                    <h3>File Structure</h3>
+                    <div id="file-structure"></div>
                 </div>
-                <div class="sidebar-content">
-                    <div id="toolpaths-panel" class="tab-panel active">
-                        <div class="panel-header">
-                            <span>Toolpaths</span>
-                            <button class="panel-btn" id="btn-add-toolpath">+</button>
-                        </div>
-                        <div class="panel-content" id="toolpaths-list"></div>
-                    </div>
-                    <div id="operations-panel" class="tab-panel">
-                        <div class="panel-header">
-                            <span>Operations</span>
-                        </div>
-                        <div class="panel-content" id="operations-list"></div>
-                    </div>
-                    <div id="geometry-panel" class="tab-panel">
-                        <div class="panel-header">
-                            <span>Geometry</span>
-                        </div>
-                        <div class="panel-content" id="geometry-list"></div>
-                    </div>
+                <div class="panel">
+                    <h3>Toolpaths</h3>
+                    <div id="toolpath-list"></div>
+                </div>
+                <div class="panel">
+                    <h3>Properties</h3>
+                    <div id="properties"></div>
                 </div>
             </aside>
             
-            <main class="main-viewer">
-                <div id="viewer-container">
-                    <canvas id="renderCanvas"></canvas>
-                    <div class="viewer-controls">
-                        <button class="viewer-btn" id="btn-top-view" title="Top View">T</button>
-                        <button class="viewer-btn" id="btn-front-view" title="Front View">F</button>
-                        <button class="viewer-btn" id="btn-side-view" title="Side View">S</button>
-                        <button class="viewer-btn" id="btn-iso-view" title="Isometric View">I</button>
-                    </div>
+            <main class="viewer-container">
+                <div id="model-viewer"></div>
+                <div class="viewer-controls">
+                    <button id="zoom-fit">Fit View</button>
+                    <button id="view-top">Top</button>
+                    <button id="view-front">Front</button>
+                    <button id="view-side">Side</button>
+                    <button id="view-iso">Isometric</button>
                 </div>
             </main>
-            
-            <aside class="right-sidebar">
-                <div class="properties-panel">
-                    <div class="panel-header">
-                        <span>Properties</span>
-                    </div>
-                    <div class="panel-content" id="properties-content"></div>
-                </div>
-            </aside>
         </div>
-        
-        <footer class="app-footer">
-            <div class="status-bar">
-                <div class="status-item" id="status-coords">X: 0.000 Y: 0.000 Z: 0.000</div>
-                <div class="status-item" id="status-units">Units: MM</div>
-                <div class="status-item" id="status-file">No file loaded</div>
-                <div class="status-item" id="status-message">Ready</div>
-            </div>
-        </footer>
     </div>
-    
-    <div id="loading-overlay">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Loading...</div>
-    </div>
-    
-    <div id="modal-container"></div>
+
+    <script src="lib/three.js"></script>
+    <script src="lib/jszip.js"></script>
+    <script src="src/core/geometry-engine.js"></script>
+    <script src="src/core/file-parser.js"></script>
+    <script src="src/core/nc-generator.js"></script>
+    <script src="src/core/toolpath-engine.js"></script>
+    <script src="src/app.js"></script>
 </body>
 </html>
