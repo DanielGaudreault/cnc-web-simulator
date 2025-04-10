@@ -3,137 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CNC web simulator</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="lib/three.js"></script>
-    <script src="lib/jszip.js"></script>
-    <script src="lib/dat.gui.js"></script>
+    <title>Ultimate CNC Viewer</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Ribbon UI -->
-        <header class="ribbon-ui">
-            <div class="ribbon-tabs">
-                <button class="ribbon-tab active" data-tab="home">Home</button>
-                <button class="ribbon-tab" data-tab="create">Create</button>
-                <button class="ribbon-tab" data-tab="toolpaths">Toolpaths</button>
-                <button class="ribbon-tab" data-tab="simulate">Simulate</button>
-            </div>
-            
-            <div class="ribbon-panels">
-                <!-- Home Panel -->
-                <div class="ribbon-panel active" data-panel="home">
-                    <div class="ribbon-group">
-                        <h3>File</h3>
-                        <button id="new-file">New</button>
-                        <input type="file" id="open-file" accept=".mcam,.MCAM,.step,.STEP">
-                        <button id="save-file">Save</button>
-                        <button id="export-stl">Export STL</button>
-                    </div>
-                    
-                    <div class="ribbon-group">
-                        <h3>View</h3>
-                        <button id="view-top">Top</button>
-                        <button id="view-front">Front</button>
-                        <button id="view-side">Side</button>
-                        <button id="view-iso">Isometric</button>
-                        <button id="zoom-fit">Fit View</button>
-                    </div>
-                </div>
-                
-                <!-- Create Panel -->
-                <div class="ribbon-panel" data-panel="create">
-                    <div class="ribbon-group">
-                        <h3>Primitives</h3>
-                        <button id="create-box">Box</button>
-                        <button id="create-cylinder">Cylinder</button>
-                        <button id="create-sphere">Sphere</button>
-                    </div>
-                </div>
-                
-                <!-- Toolpaths Panel -->
-                <div class="ribbon-panel" data-panel="toolpaths">
-                    <div class="ribbon-group">
-                        <h3>Operations</h3>
-                        <button id="toolpath-contour">Contour</button>
-                        <button id="toolpath-pocket">Pocket</button>
-                        <button id="toolpath-drill">Drill</button>
-                    </div>
-                </div>
-            </div>
-        </header>
-        
-        <!-- Main Content Area -->
-        <div class="main-content">
-            <!-- Left Sidebar -->
-            <aside class="sidebar left">
-                <div class="tree-view" id="geometry-tree"></div>
-                <div class="toolpath-list" id="toolpath-list"></div>
-            </aside>
-            
-            <!-- Center Viewport -->
-            <main class="viewport">
-                <div id="cad-viewer"></div>
-                <div id="toolpath-visualizer"></div>
-                <div class="viewport-controls">
-                    <select id="display-mode">
-                        <option value="shaded">Shaded</option>
-                        <option value="wireframe">Wireframe</option>
-                        <option value="hidden-line">Hidden Line</option>
-                    </select>
-                </div>
-            </main>
-            
-            <!-- Right Sidebar -->
-            <aside class="sidebar right">
-                <div class="property-editor" id="property-editor"></div>
-                <div class="post-processor">
-                    <h3>Post Processor</h3>
-                    <select id="post-processor">
-                        <option value="generic">Generic</option>
-                        <option value="fanuc">Fanuc</option>
-                        <option value="haas">Haas</option>
-                        <option value="heidenhain">Heidenhain</option>
-                    </select>
-                    <button id="generate-gcode">Generate G-Code</button>
-                </div>
-            </aside>
+    <div id="viewer-container">
+        <div id="top-toolbar">
+            <button id="save-btn" class="tool-button" data-tooltip="Save STL">Save</button>
+            <label class="tool-button" for="file-input" data-tooltip="Open G-code File">Open</label>
+            <input type="file" id="file-input" accept=".nc,.gcode,.txt">
+            <button id="sample-circle-btn" class="tool-button" data-tooltip="Load Circle Sample">Circle</button>
+            <button id="sample-square-btn" class="tool-button" data-tooltip="Load Square Sample">Square</button>
         </div>
-        
-        <!-- Status Bar -->
-        <footer class="status-bar">
-            <div class="coordinates">X: 0.000 Y: 0.000 Z: 0.000</div>
-            <div class="units">Units: mm</div>
-            <div class="selection-count">Selected: 0</div>
-        </footer>
+        <div id="sidebar">
+            <h3>File Info</h3>
+            <div id="info-panel">
+                <div class="info-item"><span class="info-label">File Name:</span><span id="file-name">None</span></div>
+                <div class="info-item"><span class="info-label">File Size:</span><span id="file-size">0 KB</span></div>
+                <div class="info-item"><span class="info-label">Toolpaths:</span><span id="toolpath-count">0</span></div>
+                <div class="info-item"><span class="info-label">Units:</span><span id="units">N/A</span></div>
+                <div class="info-item"><span class="info-label">Bounds:</span><span id="bounds">N/A</span></div>
+                <div class="info-item"><span class="info-label">Current Tool:</span><span id="current-tool">N/A</span></div>
+            </div>
+            <h3>G-code Editor</h3>
+            <textarea id="gcode-input" placeholder="Enter G-code here or load a file..."></textarea>
+            <div class="dropdown-buttons">
+                <button id="plot-btn" class="nc-btn" data-tooltip="Plot G-code">Plot</button>
+                <button id="clear-btn" class="nc-btn alt mx-1" data-tooltip="Clear Plot">Clear</button>
+            </div>
+        </div>
+        <div id="canvas-container">
+            <canvas id="canvas-2d"></canvas>
+            <canvas id="canvas-3d"></canvas>
+            <div id="control-bar">
+                <div class="control-icons">
+                    <span id="ctrl-2d3d" class="icon" data-tooltip="Toggle 2D/3D"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+                    <span id="ctrl-material" class="icon" data-tooltip="Toggle Material"><svg viewBox="0 0 24 24"><path d="M3 3h18v18H3z" fill="currentColor" opacity="0.5"/></svg></span>
+                    <span id="ctrl-reset" class="icon" data-tooltip="Reset View"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"/></svg></span>
+                    <span id="ctrl-rewind" class="icon" data-tooltip="Fast Rewind"><svg viewBox="0 0 24 24"><path d="M11 18V6l-8 6 8 6zm2 0V6l8 6-8 6z" fill="currentColor"/></svg></span>
+                    <span id="ctrl-play-reverse" class="icon" data-tooltip="Play Reverse"><svg id="play-btn-reverse" viewBox="0 0 24 24"><path d="M15 6v12l-8-6z" fill="currentColor"/></svg><svg id="pause-btn-reverse" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6zm8-14v14h4V5z" fill="currentColor"/></svg></span>
+                    <span id="ctrl-play" class="icon" data-tooltip="Play"><svg id="play-btn" viewBox="0 0 24 24"><path d="M8 6v12l8-6z" fill="currentColor"/></svg><svg id="pause-btn" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6zm8-14v14h4V5z" fill="currentColor"/></svg></span>
+                    <span id="ctrl-forward" class="icon" data-tooltip="Fast Forward"><svg viewBox="0 0 24 24"><path d="M4 18l8-6-8-6v12zm9-12v12l8-6z" fill="currentColor"/></svg></span>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <!-- Load all JavaScript files -->
-    <script src="src/core/geometry-kernel.js"></script>
-    <script src="src/core/cad-engine.js"></script>
-    <script src="src/core/cam-engine.js"></script>
-    <script src="src/core/file-io.js"></script>
-    <script src="src/core/post-processor.js"></script>
-    <script src="src/core/tool-library.js"></script>
-    <script src="src/core/command-manager.js"></script>
-    <script src="src/core/selection-manager.js"></script>
-    <script src="src/core/transformation-manager.js"></script>
-    <script src="src/core/undo-redo.js"></script>
-    
-    <script src="src/ui/ribbon-ui.js"></script>
-    <script src="src/ui/cad-viewer.js"></script>
-    <script src="src/ui/tree-view.js"></script>
-    <script src="src/ui/property-editor.js"></script>
-    <script src="src/ui/toolpath-visualizer.js"></script>
-    <script src="src/ui/status-bar.js"></script>
-    
-    <script src="src/utils/file-utils.js"></script>
-    <script src="src/utils/math-utils.js"></script>
-    <script src="src/utils/worker-manager.js"></script>
-    
-    <script src="src/formats/mcam-parser.js"></script>
-    <script src="src/formats/step-parser.js"></script>
-    
-    <script src="app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/exporters/STLExporter.js"></script>
+    <script src="cnc-viewer.js"></script>
+    <script src="parsers.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>
